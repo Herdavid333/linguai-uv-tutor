@@ -87,12 +87,12 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen bg-[#e6e6e6] flex items-center justify-center px-4">
-      <AuthCard showArrow={true}>
-        <div className="text-center mb-5">
-          <h2 className="text-[24px] font-bold text-black leading-none">
+      <AuthCard showArrow={true} >
+        <div className="text-center mb-5 -mt-10">
+          <h2 className="text-[50px] font-bold text-black leading-none">
             Sign In
           </h2>
-          <p className="text-[12px] text-black font-semibold mt-1">
+          <p className="text-[30px] text-black font-semibold mt-2 mb-1">
             Welcome Back !
           </p>
         </div>
@@ -104,7 +104,6 @@ export default function LoginPage() {
             name="studentId"
             value={form.studentId}
             onChange={handleChange}
-            placeholder="123456789"
           />
 
           <AuthInput
@@ -113,7 +112,6 @@ export default function LoginPage() {
             name="password"
             value={form.password}
             onChange={handleChange}
-            placeholder="••••••••"
             showToggle={true}
           />
 
@@ -136,7 +134,7 @@ export default function LoginPage() {
             <AuthButton>{loading ? "Signing in..." : "Log in"}</AuthButton>
           </div>
 
-          <div className="text-center text-[12px] text-black mb-3">
+          <div className="text-center text-[20px] text-black mb-2 mt-10">
             Forgot password?{" "}
             <Link
               href="/forgotPassword"
@@ -146,7 +144,7 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          <div className="text-center text-[12px] text-black">
+          <div className="text-center text-[20px] text-black -mb-15">
             Don&apos;t have an account?{" "}
             <Link
               href="/register"

@@ -6,7 +6,9 @@ import {
   signOut,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
 } from "firebase/auth";
+
 import { doc, setDoc, collection, query, where, getDocs, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
 
@@ -78,6 +80,15 @@ export function AuthProvider({ children }) {
     await signOut(auth);
   };
 
+  const resetPassword = async (email) => {
+    const actionCodeSettings = {
+      url: "http://localhost:3000/resetPassword", //se debe de cambiar por la url de producción cuando se despliegue
+      handleCodeInApp: true,
+    };
+
+    return await sendPasswordResetEmail(auth, email, actionCodeSettings);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -86,6 +97,7 @@ export function AuthProvider({ children }) {
         login,
         register,
         logout,
+        resetPassword
       }}
     >
       {children}

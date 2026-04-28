@@ -27,12 +27,12 @@ export default function PasswordRequirements({ password, isOpen }) {
   if (!isOpen) return null;
 
   return (
-    <div className="mt-3 rounded-md bg-[#b3b3b3] p-4 text-white shadow-sm">
-      <h4 className="mb-3 text-[14px] font-bold text-white">
+    <div className="mt-1 rounded-md bg-[#b3b3b3] p-4 text-white">
+      <h4 className="mb-1 text-[16px] font-bold text-black text-center">
         Password Requirements
       </h4>
 
-      <ul className="space-y-1 text-[13px]">
+      <ul className="space-y-0 text-[13px]">
         {requirements.map((requirement, index) => (
           <li
             key={index}

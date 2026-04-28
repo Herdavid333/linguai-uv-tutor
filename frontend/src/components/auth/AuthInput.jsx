@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function AuthInput({
   label,
@@ -24,12 +25,12 @@ export default function AuthInput({
     <div className="mb-4">
       <label
         htmlFor={name}
-        className="mb-1 block text-[12px] font-bold text-red-600"
+        className="mb-2 block text-[25px] font-bold text-red-600"
       >
         {label}
       </label>
 
-      <div className="flex items-center border-0 border-b border-black pb-1">
+      <div className="flex items-center border-b border-black transition-all duration-200 focus-within:border-red-600">
         <input
           id={name}
           type={inputType}
@@ -37,16 +38,17 @@ export default function AuthInput({
           value={value}
           onChange={onChange}
           placeholder={placeholder}
-          className="w-full bg-transparent text-[13px] text-black outline-none"
+          className="w-full bg-transparent pb-4 text-[20px] text-black outline-none"
         />
 
         {showToggle && type === "password" && (
           <button
             type="button"
             onClick={() => setShowPassword((prev) => !prev)}
-            className="ml-2 text-[12px] text-black"
+            className="ml-2 pb-1 text-gray-500 transition hover:text-red-600"
+            aria-label={showPassword ? "Hide password" : "Show password"}
           >
-            {showPassword ? "🙈" : "👁"}
+            {showPassword ? <EyeOff size={16} /> : <Eye size={25} />}
           </button>
         )}
       </div>

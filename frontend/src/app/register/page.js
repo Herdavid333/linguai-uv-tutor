@@ -110,69 +110,68 @@ export default function RegisterPage() {
   return (
     <>
       <main className="min-h-screen bg-[#e6e6e6] flex items-center justify-center px-4">
-        <AuthCard showArrow={false}>
-          <div className="text-center mb-5">
-            <h2 className="text-[24px] font-bold text-black leading-none">
+        <AuthCard showArrow={true}>
+          <div className="text-center mb-5 -mt-13">
+            <h2 className="text-[50px] font-bold text-black leading-none">
               Sign Up
             </h2>
-            <p className="text-[12px] text-black font-semibold mt-1 leading-4">
-              Create an account to
-              <br />
-              get started !
+            <p className="text-[25px] text-black font-semibold mt-3 leading-4">
+              Create an account to get started !
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="w-full">
-            <AuthInput
-              label="Full name"
-              name="fullName"
-              value={form.fullName}
-              onChange={handleChange}
-              placeholder="Hernan David Cisneros"
-            />
+            <p className="mb-6 text-center text-[16px] font-bold text-red-600">
+              All fields below are required
+            </p>
 
-            <AuthInput
-              label="Student ID"
-              name="studentId"
-              value={form.studentId}
-              onChange={handleChange}
-              placeholder="123456789"
-            />
+            <div className="grid grid-cols-1 gap-x-5 gap-y-8 md:grid-cols-3">
+              <AuthInput
+                label="Full name"
+                name="fullName"
+                value={form.fullName}
+                onChange={handleChange}
+              />
 
-            <AuthInput
-              label="Email"
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder="hernan@example.com"
-            />
+              <AuthInput
+                label="Student ID"
+                name="studentId"
+                value={form.studentId}
+                onChange={handleChange}
+              />
 
-            <AuthInput
-              label="Password"
-              type="password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-              showToggle={true}
-            />
+              <AuthInput
+                label="Email"
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+              />
 
-            <AuthInput
-              label="Confirm password"
-              type="password"
-              name="confirmPassword"
-              value={form.confirmPassword}
-              onChange={handleChange}
-              placeholder="••••••••"
-              showToggle={true}
-            />
+              <AuthInput
+                label="Password"
+                type="password"
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                showToggle={true}
+              />
 
-            <div className="mt-1 mb-2">
+              <AuthInput
+                label="Confirm password"
+                type="password"
+                name="confirmPassword"
+                value={form.confirmPassword}
+                onChange={handleChange}
+                showToggle={true}
+              />
+            </div>
+
+            <div className="mt-3 text-center">
               <button
                 type="button"
                 onClick={() => setShowPasswordHelp((prev) => !prev)}
-                className="text-[12px] font-bold text-red-600 hover:underline"
+                className="text-[15px] font-bold text-red-600 hover:underline"
               >
                 {showPasswordHelp
                   ? "Hide password requirements"
@@ -186,23 +185,18 @@ export default function RegisterPage() {
             />
 
             {errorMessage && (
-              <p className="mb-3 text-center text-[12px] font-semibold text-red-600">
+              <p className="mt-4 mb-3 text-center text-[15px] font-semibold text-red-600">
                 {errorMessage}
               </p>
             )}
 
-            <div className="mt-5 mb-3">
-              <AuthButton>
-                {loading ? "Creating account..." : "Register"}
-              </AuthButton>
+            <div className="mt-5 mb-4">
+              <AuthButton>{loading ? "Creating account..." : "Register"}</AuthButton>
             </div>
 
-            <div className="text-center text-[12px] text-black">
+            <div className="text-center text-[15px] text-black">
               Already have an account?{" "}
-              <Link
-                href="/login"
-                className="text-red-600 font-bold hover:underline"
-              >
+              <Link href="/login" className="text-red-600 font-bold hover:underline">
                 Sign In here
               </Link>
             </div>
