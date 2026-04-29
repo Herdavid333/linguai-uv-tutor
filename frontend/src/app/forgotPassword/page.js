@@ -53,9 +53,9 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#e6e6e6] flex items-center justify-center px-4">
+    <main className="min-h-screen bg-[#e6e6e6] flex items-center justify-center px-4 py-8">
       <AuthCard showArrow={true}>
-        <div className="text-center mb-5 -mt-10">
+        <div className="text-center">
           <h2 className="text-[50px] font-bold text-black leading-none">
             Recover Password
           </h2>
@@ -91,7 +91,7 @@ export default function ForgotPasswordPage() {
             </AuthButton>
           </div>
 
-          <div className="text-center text-[20px] text-black mt-10 -mb-15">
+          <div className="text-center text-[20px] text-black mt-10">
             Remember your password?{" "}
             <Link
               href="/login"

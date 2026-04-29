@@ -2,7 +2,7 @@ export default function AuthButton({ children, type = "submit" }) {
   return (
     <button
       type={type}
-      className="w-full bg-red-600 hover:bg-red-700 text-white font-bold text-[30px] py-2 rounded-[4px] shadow-sm transition"
+      className="w-full rounded-[4px] bg-red-600 py-3 text-[17px] sm:text-[25px] font-bold text-white shadow-sm transition hover:bg-red-700"
     >
       {children}
     </button>

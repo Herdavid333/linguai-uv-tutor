@@ -109,9 +109,9 @@ export default function RegisterPage() {
 
   return (
     <>
-      <main className="min-h-screen bg-[#e6e6e6] flex items-center justify-center px-4">
-        <AuthCard showArrow={true}>
-          <div className="text-center mb-5 -mt-13">
+      <main className="min-h-screen bg-[#e6e6e6] flex items-center justify-center px-4 py-4">
+        <AuthCard showArrow={true} width="1200px">
+          <div className="text-center mb-5 -mt-2">
             <h2 className="text-[50px] font-bold text-black leading-none">
               Sign Up
             </h2>
@@ -121,101 +121,106 @@ export default function RegisterPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="w-full">
-            <p className="mb-6 text-center text-[16px] font-bold text-red-600">
+            <p className="mb-10 text-center text-[20px] font-bold text-red-600">
               All fields below are required
             </p>
 
-            <div className="grid grid-cols-1 gap-x-5 gap-y-8 md:grid-cols-3">
-              <AuthInput
-                label="Full name"
-                name="fullName"
-                value={form.fullName}
-                onChange={handleChange}
-              />
+            <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.4fr_1fr]">
+            <div>
+              <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-2">
+                <AuthInput
+                  label="Full name"
+                  name="fullName"
+                  value={form.fullName}
+                  onChange={handleChange}
+                />
 
-              <AuthInput
-                label="Student ID"
-                name="studentId"
-                value={form.studentId}
-                onChange={handleChange}
-              />
+                <AuthInput
+                  label="Student ID"
+                  name="studentId"
+                  value={form.studentId}
+                  onChange={handleChange}
+                />
 
-              <AuthInput
-                label="Email"
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-              />
+                <AuthInput
+                  label="Email"
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                />
 
-              <AuthInput
-                label="Password"
-                type="password"
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-                showToggle={true}
-              />
+                <AuthInput
+                  label="Password"
+                  type="password"
+                  name="password"
+                  value={form.password}
+                  onChange={handleChange}
+                  showToggle={true}
+                />
 
-              <AuthInput
-                label="Confirm password"
-                type="password"
-                name="confirmPassword"
-                value={form.confirmPassword}
-                onChange={handleChange}
-                showToggle={true}
-              />
+                <AuthInput
+                  label="Confirm password"
+                  type="password"
+                  name="confirmPassword"
+                  value={form.confirmPassword}
+                  onChange={handleChange}
+                  showToggle={true}
+                />
+              </div>
             </div>
 
-            <div className="mt-3 text-center">
+            <div className="flex flex-col justify-start">
               <button
                 type="button"
                 onClick={() => setShowPasswordHelp((prev) => !prev)}
-                className="text-[15px] font-bold text-red-600 hover:underline"
+                className="mb-4 text-center text-[18px] font-bold text-red-600 hover:underline"
               >
                 {showPasswordHelp
                   ? "Hide password requirements"
                   : "Show password requirements"}
               </button>
+
+              <PasswordRequirements
+                password={form.password}
+                isOpen={showPasswordHelp}
+              />
+
+              <div className="mt-4 mb-4">
+                <AuthButton>{loading ? "Creating account..." : "Register"}</AuthButton>
+              </div>
+
+              <div className="text-center text-[18px] text-black mt-2 -mb-5">
+                Already have an account?{" "}
+                <Link href="/login" className="text-red-600 font-bold hover:underline">
+                  Sign In here
+                </Link>
+              </div>
             </div>
-
-            <PasswordRequirements
-              password={form.password}
-              isOpen={showPasswordHelp}
-            />
-
-            {errorMessage && (
-              <p className="mt-4 mb-3 text-center text-[15px] font-semibold text-red-600">
-                {errorMessage}
-              </p>
-            )}
-
-            <div className="mt-5 mb-4">
-              <AuthButton>{loading ? "Creating account..." : "Register"}</AuthButton>
-            </div>
-
-            <div className="text-center text-[15px] text-black">
-              Already have an account?{" "}
-              <Link href="/login" className="text-red-600 font-bold hover:underline">
-                Sign In here
-              </Link>
             </div>
           </form>
+
+          {errorMessage && (
+                <p className="ml-50 mt-5 -mb-5 text-left text-[18px] font-semibold text-red-600">
+                  {errorMessage}
+                </p>
+              )}
+
         </AuthCard>
       </main>
 
       {showSuccessModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-[320px] rounded-md bg-white p-6 shadow-lg">
-            <h3 className="mb-3 text-center text-[18px] font-bold text-black">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-10">
+          <div className="w-full max-w-[380px] rounded-md bg-white p-6 shadow-lg">
+            <h3 className="mb-3 text-center text-[25px] font-bold text-black">
               Account created successfully
             </h3>
-            <p className="mb-5 text-center text-[14px] text-black">
+            <p className="mb-5 text-center text-[20px] text-black">
               You will be redirected to the login page.
             </p>
             <button
               onClick={handleAcceptRedirect}
-              className="w-full rounded-[4px] bg-red-600 py-2 text-[15px] font-bold text-white transition hover:bg-red-700"
+              className="w-full rounded-[4px] bg-red-600 py-2 text-[25px] font-bold text-white transition hover:bg-red-700"
             >
               Accept
             </button>

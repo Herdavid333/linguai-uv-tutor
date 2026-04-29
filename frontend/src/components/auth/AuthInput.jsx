@@ -25,7 +25,7 @@ export default function AuthInput({
     <div className="mb-4">
       <label
         htmlFor={name}
-        className="mb-2 block text-[25px] font-bold text-red-600"
+        className="mb-2 block text-[20px] sm:text-[20px] font-bold text-red-600"
       >
         {label}
       </label>
@@ -38,7 +38,8 @@ export default function AuthInput({
           value={value}
           onChange={onChange}
           placeholder={placeholder}
-          className="w-full bg-transparent pb-4 text-[20px] text-black outline-none"
+          className="w-full bg-transparent pb-2 text-[15px] sm:text-[16px] text-black outline-none"
+          
         />
 
         {showToggle && type === "password" && (
