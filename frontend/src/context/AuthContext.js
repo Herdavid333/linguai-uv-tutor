@@ -29,7 +29,7 @@ export function AuthProvider({ children }) {
             setUser({
               uid: firebaseUser.uid,
               email: firebaseUser.email,
-              ...docSnap.data(), // 👈 aquí viene fullName
+              ...docSnap.data(),
             });
           } else {
             setUser(firebaseUser);
