@@ -86,12 +86,14 @@ export function AuthProvider({ children }) {
 
     const firebaseUser = userCredential.user;
 
-    await setDoc(doc(db, "users", firebaseUser.uid), {
-      uid: firebaseUser.uid,
+    await setDoc(doc(db, "users", userCredential.user.uid), {
+      uid: userCredential.user.uid,
       fullName,
       studentId,
       email,
-      createdAt: serverTimestamp(),
+      role: "student",
+      englishLevel: "Beginner (A1)",
+      createdAt: new Date().toISOString(),
     });
 
     return userCredential;
