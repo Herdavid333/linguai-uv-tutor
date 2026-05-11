@@ -74,7 +74,7 @@ export default function HomePage() {
       <main className="min-h-screen bg-[#e6e6e6] flex justify-center px-4 py-6">
         <section className="w-full max-w-[390px] min-h-[720px] bg-white border-2 border-[#f3a3a3] rounded-[10px] shadow-md overflow-hidden">
           {/* Header */}
-          <header className="bg-[#b8b8b8] border-b-4 border-[#0099ff]">
+          <header className="bg-[#b8b8b8] border-b-4 border-white">
             <div className="grid grid-cols-[1fr_1px_1fr] items-center px-4 py-3">
               <div className="text-center">
                 <h1 className="text-[30px] font-extrabold leading-none text-black">
