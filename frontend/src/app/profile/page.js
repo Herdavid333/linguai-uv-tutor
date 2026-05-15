@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   BarChart3,
@@ -17,11 +17,13 @@ import {
   Eye,
   X,
 } from "lucide-react";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { updatePassword } from "firebase/auth";
 
 import { useAuth } from "../../context/AuthContext";
-import { db, auth } from "../../lib/firebase";
+import { db, auth, storage } from "../../lib/firebase";
+
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -42,6 +44,10 @@ export default function ProfilePage() {
   const role = user?.role || "Student";
   const englishLevel = user?.englishLevel || "Beginner (A1)";
 
+  const [profileImage, setProfileImage] = useState(user?.photoURL || null);
+  const [selectedImageFile, setSelectedImageFile] = useState(null);
+  const fileInputRef = useRef(null);
+
   const handleLogout = async () => {
     await logout();
     router.push("/login");
@@ -56,6 +62,12 @@ export default function ProfilePage() {
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
+    setMessage("");
+
+    if (!user?.uid) {
+      setMessage("User information is not available.");
+      return;
+    }
 
     if (!fullName.trim()) {
       setMessage("Name is required.");
@@ -64,14 +76,13 @@ export default function ProfilePage() {
 
     try {
       setSaving(true);
-
       await updateDoc(doc(db, "users", user.uid), {
         fullName: fullName.trim(),
       });
 
       setMessage("Profile updated successfully.");
     } catch (error) {
-      console.error(error);
+      console.error("Error updating profile:", error);
       setMessage("Could not update profile.");
     } finally {
       setSaving(false);
@@ -109,6 +120,93 @@ export default function ProfilePage() {
     }
   };
 
+  useEffect(() => {
+    const loadUserPhoto = async () => {
+      if (!user?.uid) return;
+
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+
+        if (userData.photoURL) {
+          setProfileImage(userData.photoURL);
+        }
+
+        if (userData.fullName) {
+          setFullName(userData.fullName);
+        }
+      }
+    };
+
+    loadUserPhoto();
+  }, [user?.uid]);
+
+  const handleProfileImageChange = async (e) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    if (!user?.uid) {
+      setMessage("User information is not available.");
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onloadend = async () => {
+      const previewImage = reader.result;
+
+      setProfileImage(previewImage);
+      setMessage("Uploading profile photo...");
+
+      try {
+        setSaving(true);
+
+        const imageRef = ref(storage, `profilePhotos/${user.uid}/profile-photo`);
+
+        await uploadBytes(imageRef, file);
+
+        const downloadURL = await getDownloadURL(imageRef);
+
+        await updateDoc(doc(db, "users", user.uid), {
+          photoURL: downloadURL,
+        });
+
+        setProfileImage(downloadURL);
+        setMessage("Profile photo updated successfully.");
+      } catch (error) {
+        console.error("Error uploading profile photo:", error);
+        setMessage("Could not upload profile photo.");
+      } finally {
+        setSaving(false);
+        e.target.value = "";
+      }
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+ /*  const handleSaveProfilePhoto = async () => {
+    if (!selectedImageFile || !user?.uid) return null;
+
+    const imageRef = ref(
+      storage,
+      `profilePhotos/${user.uid}/${selectedImageFile.name}`
+    );
+
+    await uploadBytes(imageRef, selectedImageFile);
+
+    const downloadURL = await getDownloadURL(imageRef);
+
+    await updateDoc(doc(db, "users", user.uid), {
+      photoURL: downloadURL,
+    });
+
+    return downloadURL;
+  }; */
+
   return (
     <main className="min-h-screen bg-[#e6e6e6] flex justify-center px-4 py-6 overflow-hidden">
       <section className="w-full max-w-[390px] bg-white border-2 border-[#f3a3a3] rounded-[10px] shadow-md overflow-hidden flex flex-col justify-evenly">
@@ -134,26 +232,43 @@ export default function ProfilePage() {
 
         {/* PROFILE MAIN */}
         <section className="px-6 py-5">
-          <div className="flex justify-end">
+          <div className="flex justify-end mt-2 -mr-4">
             <button
+              onClick={handleLogout}
               className="rounded-[5px] bg-red-600 text-[18px] -mt-5 px-5 py-1 whitespace-nowrap font-bold text-white shadow hover:bg-red-700"
             >
               Log out
             </button>
           </div>
 
-          <div className="-mt-5 grid grid-cols-[64px_1fr] gap-4 items-start">
-            <div>
-              <div className="mt-3 h-16 w-16 bg-[#9d9d9d] flex items-center justify-center">
-                <User size={50} className="text-black fill-black" />
+          <div className="-mt-2 -ml-2 grid grid-cols-[70px_1fr] gap-9 items-start">
+            <div className="flex flex-col items-center w-fit">
+              <div className="h-24 w-24 rounded-full bg-[#9d9d9d] flex items-center justify-center overflow-hidden">
+                {profileImage ? (
+                  <img
+                    src={profileImage}
+                    alt="Profile"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <User size={42} className="text-black fill-black" />
+                )}
               </div>
 
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleProfileImageChange}
+                className="hidden"
+              />
+
               <button
-                onClick={handleOpenEdit}
-                className="ml-4 mt-1 flex items-center gap-1 text-[15px] underline text-black
-                hover:text-red-600"
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="mt-2 w-full flex items-center justify-center gap-2 text-[12px] text-black transition duration-100 active:scale-95 active:translate-y-[1px] underline hover:text-red-600"
               >
-                Edit <Pencil size={15} />
+                Edit <Pencil size={12} />
               </button>
             </div>
 
@@ -198,21 +313,37 @@ export default function ProfilePage() {
 
         {/* FOOTER NAV */}
         <nav className="border-t border-black bg-[#b8b8b8] px-4 py-2">
-          <div className="grid grid-cols-2 text-center">
+          <div className="grid grid-cols-[1fr_2px_1fr] items-center text-center">
             <Link
               href="/home"
-              className="flex flex-col items-center gap-1 text-black border-r border-white"
+              className="
+                  flex flex-col items-center gap-1 text-black
+                  hover:scale-[1.1]
+                  active:scale-95
+                  active:translate-y-[2px]
+                  rounded-md
+                  py-1
+                  "
             >
               <Home size={34} className="fill-black" />
-              <span className="text-[13px] font-bold">Home</span>
+              <span className="text-[15px] font-bold">Home</span>
             </Link>
+
+            <div className="h-full bg-white" />
 
             <Link
               href="/progress"
-              className="flex flex-col items-center gap-1 text-black"
+              className="
+                  flex flex-col items-center gap-1 text-black
+                  hover:scale-[1.1]
+                  active:scale-95
+                  active:translate-y-[2px]
+                  rounded-md
+                  py-1
+                  "
             >
               <BarChart3 size={34} />
-              <span className="text-[13px] font-bold">My Progress</span>
+              <span className="text-[15px] font-bold">My Progress</span>
             </Link>
           </div>
         </nav>

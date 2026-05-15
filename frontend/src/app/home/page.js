@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BarChart3, User, Settings, Bot } from "lucide-react";
+import { BarChart3, User, Bot } from "lucide-react";
 import { useState } from "react";
 
 import { useAuth } from "../../context/AuthContext";
@@ -266,43 +266,48 @@ export default function HomePage() {
              FOOTER / NAVEGACIÓN INFERIOR
           ========================================================= */}
           <nav className="border-t border-black bg-[#b8b8b8] px-2 sm:px-4 py-2 shrink-0">
-            <div className="grid grid-cols-3 text-center">
-              
+            <div className="grid grid-cols-[1fr_2px_1fr] items-center text-center">
+
               {/* Perfil */}
               <Link
                 href="/profile"
-                className="flex flex-col items-center gap-1 text-black"
+                className="
+                  flex flex-col items-center gap-1 text-black
+                  hover:scale-[1.1]
+                  active:scale-95
+                  active:translate-y-[2px]
+                  rounded-md
+                  py-1
+                  "
               >
-                <User size={28} className="sm:w-7 sm:h-7"/>
+                <User size={40} className="sm:w-9 sm:h-9 fill-black" />
 
-                <span className="text-[13px] sm:text-[13px] font-bold">
+                <span className="text-[15px] font-bold">
                   My Profile
                 </span>
               </Link>
 
+              <div className="h-full bg-white" />
+
               {/* Progreso */}
               <Link
                 href="/progress"
-                className="flex flex-col items-center gap-1 text-black border-x border-white"
+                className="
+                  flex flex-col items-center gap-1 text-black
+                  hover:scale-[1.1]
+                  active:scale-95
+                  active:translate-y-[2px]
+                  rounded-md
+                  py-1
+                  "
               >
-                <BarChart3 size={28} className="sm:w-7 sm:h-7"/>
+                <BarChart3 size={40} className="sm:w-9 sm:h-9" />
 
-                <span className="text-[13px] sm:text-[13px] font-bold">
+                <span className="text-[15px] font-bold">
                   My Progress
                 </span>
               </Link>
 
-              {/* Logout */}
-              <button
-                onClick={handleLogout}
-                className="flex flex-col items-center gap-1 text-black"
-              >
-                <Settings size={28} className="sm:w-7 sm:h-7"/>
-
-                <span className="text-[13px] sm:text-[13px] font-bold">
-                  Log out
-                </span>
-              </button>
             </div>
           </nav>
         </section>
