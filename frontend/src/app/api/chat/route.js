@@ -1,3 +1,5 @@
+import { generatePedagogicalResponse } from "../../../utils/pedagogicalResponse";
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -11,7 +13,7 @@ export async function POST(request) {
       );
     }
 
-    const responseText = generateMockTutorResponse({
+    const responseText = generatePedagogicalResponse({
       context,
       messages,
       latestMessage,
@@ -30,8 +32,4 @@ export async function POST(request) {
       { status: 500 }
     );
   }
-}
-
-function generateMockTutorResponse({ context, latestMessage }) {
-  return `Good job! We are practicing "${context.topicTitle}" in the activity "${context.activityName}". You said: "${latestMessage.content}". Try to continue using simple English.`;
 }

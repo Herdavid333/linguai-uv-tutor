@@ -155,22 +155,53 @@ export default function HomePage() {
           {/* =========================================================
              SECCIÓN DE BIENVENIDA
           ========================================================= */}
-          <section className="shrink-0 bg-[#b8b8b8] px-4 py-3 flex gap-3 items-center">
-            
-            {/* Avatar del tutor */}
-            <div className="bg-white rounded-full p-2">
-              <Bot size={24} className="text-black" />
-            </div>
+          <section className="shrink-0 bg-[#b8b8b8] px-4 py-3">
+            {/* FILA SUPERIOR */}
+            <div className="flex justify-between items-start">
 
-            {/* Texto de bienvenida */}
-            <div>
-              <h2 className="text-[20px] font-bold text-white">
-                Hello {firstName} 👋
-              </h2>
+              {/* IZQUIERDA */}
+              <div className="flex gap-3 items-center">
+                
+                {/* Avatar tutor */}
+                <div className="bg-white rounded-full p-2">
+                  <Bot size={24} className="text-black" />
+                </div>
 
-              <p className="text-[18px] font-semibold text-white">
-                Ready to practice English?
-              </p>
+                {/* Texto bienvenida */}
+                <div>
+                  <h2 className="text-[20px] font-bold text-white leading-tight">
+                    Hello {firstName} 👋
+                  </h2>
+
+                  <p className="text-[18px] font-semibold text-white leading-tight">
+                    Ready to practice English?
+                  </p>
+                </div>
+              </div>
+
+              {/* BOTÓN LOGOUT */}
+              <button
+                onClick={handleLogout}
+                className="
+                  rounded-[5px]
+                  bg-red-600
+                  px-2
+                  py-1
+                  -mt-1
+                  text-[13px]
+                  font-bold
+                  text-white
+                  shadow
+                  hover:bg-red-700
+                  transition
+                  duration-100
+                  active:scale-95
+                  active:translate-y-[1px]
+                "
+              >
+                Log out
+              </button>
+
             </div>
           </section>
 
