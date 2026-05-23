@@ -19,15 +19,17 @@ import {
 } from "lucide-react";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { updatePassword } from "firebase/auth";
-
 import { useAuth } from "../../context/AuthContext";
-import { db, auth, storage } from "../../lib/firebase";
+import { LEARNING_GOALS } from "../../data/learningGoals";
+
+/* import { db, auth, storage } from "../../lib/firebase";
 
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-
+ */
+import { db, auth } from "../../lib/firebase";
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUserData } = useAuth();
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -36,6 +38,9 @@ export default function ProfilePage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -43,9 +48,8 @@ export default function ProfilePage() {
   const email = user?.email || "student@email.com";
   const role = user?.role || "Student";
   const englishLevel = user?.englishLevel || "Beginner (A1)";
-
-  const [profileImage, setProfileImage] = useState(user?.photoURL || null);
-  const [selectedImageFile, setSelectedImageFile] = useState(null);
+  const [learningGoal, setLearningGoal] = useState(user?.learningGoal || "");
+  const [profileImage, setProfileImage] = useState(user?.photoBase64 || null);
   const fileInputRef = useRef(null);
 
   const handleLogout = async () => {
@@ -56,6 +60,7 @@ export default function ProfilePage() {
   const handleOpenEdit = () => {
     setMessage("");
     setFullName(user?.fullName || "");
+    setLearningGoal(user?.learningGoal || "");
     setShowEditModal(true);
     setShowPasswordModal(false);
   };
@@ -74,11 +79,20 @@ export default function ProfilePage() {
       return;
     }
 
+    if (!learningGoal) {
+      setMessage("Learning goal is required.");
+      return;
+    }
+
     try {
       setSaving(true);
+
       await updateDoc(doc(db, "users", user.uid), {
         fullName: fullName.trim(),
+        learningGoal,
       });
+
+      await refreshUserData();
 
       setMessage("Profile updated successfully.");
     } catch (error) {
@@ -121,7 +135,7 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    const loadUserPhoto = async () => {
+    const loadUserData = async () => {
       if (!user?.uid) return;
 
       const userRef = doc(db, "users", user.uid);
@@ -130,17 +144,21 @@ export default function ProfilePage() {
       if (userSnap.exists()) {
         const userData = userSnap.data();
 
-        if (userData.photoURL) {
-          setProfileImage(userData.photoURL);
+        if (userData.photoBase64) {
+          setProfileImage(userData.photoBase64);
         }
 
         if (userData.fullName) {
           setFullName(userData.fullName);
         }
+
+        if (userData.learningGoal) {
+          setLearningGoal(userData.learningGoal);
+        }
       }
     };
 
-    loadUserPhoto();
+    loadUserData();
   }, [user?.uid]);
 
   const handleProfileImageChange = async (e) => {
@@ -153,32 +171,39 @@ export default function ProfilePage() {
       return;
     }
 
+    if (!file.type.startsWith("image/")) {
+      setMessage("Please select a valid image file.");
+      return;
+    }
+
+    if (file.size > 700 * 1024) {
+      setMessage("Image is too large. Please select an image under 700 KB.");
+      return;
+    }
+
     const reader = new FileReader();
 
-    reader.onloadend = async () => {
-      const previewImage = reader.result;
-
-      setProfileImage(previewImage);
-      setMessage("Uploading profile photo...");
+    reader.onload = async () => {
+      const base64Image = reader.result;
 
       try {
         setSaving(true);
-
-        const imageRef = ref(storage, `profilePhotos/${user.uid}/profile-photo`);
-
-        await uploadBytes(imageRef, file);
-
-        const downloadURL = await getDownloadURL(imageRef);
+        setMessage("Saving profile photo...");
 
         await updateDoc(doc(db, "users", user.uid), {
-          photoURL: downloadURL,
+          photoBase64: base64Image,
         });
 
-        setProfileImage(downloadURL);
+        setProfileImage(base64Image);
+
+        if (refreshUserData) {
+          await refreshUserData();
+        }
+
         setMessage("Profile photo updated successfully.");
       } catch (error) {
-        console.error("Error uploading profile photo:", error);
-        setMessage("Could not upload profile photo.");
+        console.error("Error saving profile photo:", error);
+        setMessage("Could not save profile photo.");
       } finally {
         setSaving(false);
         e.target.value = "";
@@ -188,24 +213,28 @@ export default function ProfilePage() {
     reader.readAsDataURL(file);
   };
 
- /*  const handleSaveProfilePhoto = async () => {
-    if (!selectedImageFile || !user?.uid) return null;
-
-    const imageRef = ref(
-      storage,
-      `profilePhotos/${user.uid}/${selectedImageFile.name}`
-    );
-
-    await uploadBytes(imageRef, selectedImageFile);
-
-    const downloadURL = await getDownloadURL(imageRef);
-
-    await updateDoc(doc(db, "users", user.uid), {
-      photoURL: downloadURL,
-    });
-
-    return downloadURL;
-  }; */
+  const passwordRequirements = [
+    {
+      label: "Minimum 8 characters",
+      valid: newPassword.length >= 8,
+    },
+    {
+      label: "At least one uppercase letter (A-Z)",
+      valid: /[A-Z]/.test(newPassword),
+    },
+    {
+      label: "At least one lowercase letter (a-z)",
+      valid: /[a-z]/.test(newPassword),
+    },
+    {
+      label: "At least one number (0-9)",
+      valid: /[0-9]/.test(newPassword),
+    },
+    {
+      label: "At least one special character (!@#$%^&*)",
+      valid: /[!@#$%^&*(),.?":{}|<>_\-\\[\];'/`~+=]/.test(newPassword),
+    },
+  ];
 
   return (
     <main className="min-h-screen bg-[#e6e6e6] flex justify-center px-4 py-6 overflow-hidden">
@@ -372,18 +401,42 @@ export default function ProfilePage() {
 
               <ProfileInput label="Role" value={role} disabled />
 
+              <ProfileInput
+                label="English Level"
+                value={englishLevel}
+                disabled
+              />
+
+              <div>
+                <label className="text-[12px] font-bold text-white">
+                  Learning Goal
+                </label>
+
+                <select
+                  value={learningGoal}
+                  onChange={(e) => setLearningGoal(e.target.value)}
+                  className="w-full rounded px-2 py-1 text-[12px] font-semibold outline-none bg-white text-black"
+                >
+                  <option value=""></option>
+
+                  {LEARNING_GOALS.map((goal) => (
+                    <option key={goal} value={goal}>
+                      {goal}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="text-[12px] font-bold text-white">
                   Password
                 </label>
-                <div className="flex items-center bg-white rounded px-2">
-                  <input
-                    value="**************"
-                    disabled
-                    className="w-full py-1 text-[12px] text-black outline-none"
-                  />
-                  <Eye size={16} className="text-black" />
-                </div>
+
+                <input
+                  value="**************"
+                  disabled
+                  className="w-full rounded px-2 py-1 text-[12px] text-black outline-none bg-white"
+                />
               </div>
 
               <p className="text-center text-[12px] text-white">
@@ -433,20 +486,22 @@ export default function ProfilePage() {
             </div>
 
             <form onSubmit={handleSavePassword} className="space-y-4">
-              <ProfileInput
+              <PasswordInput
                 label="New Password"
-                type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
+                showPassword={showNewPassword}
+                onToggleShow={() => setShowNewPassword((prev) => !prev)}
               />
 
-              <ProfileInput
+              <PasswordInput
                 label="Confirm New Password"
-                type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                showPassword={showConfirmPassword}
+                onToggleShow={() => setShowConfirmPassword((prev) => !prev)}
               />
-
+              
               <button
                 type="submit"
                 disabled={saving}

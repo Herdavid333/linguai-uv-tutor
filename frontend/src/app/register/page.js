@@ -7,7 +7,7 @@ import AuthCard from "../../components/auth/AuthCard.jsx";
 import AuthInput from "../../components/auth/AuthInput.jsx";
 import AuthButton from "../../components/auth/AuthButton.jsx";
 import PasswordRequirements from "../../components/auth/PasswordRequirements.jsx";
-
+import { LEARNING_GOALS } from "../../data/learningGoals";
 import { useAuth } from "../../context/AuthContext";
 
 export default function RegisterPage() {
@@ -21,8 +21,10 @@ export default function RegisterPage() {
     email: "",
     password: "",
     confirmPassword: "",
+    learningGoal: "",
   });
 
+  const [isCustomGoalMode, setIsCustomGoalMode] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -50,7 +52,8 @@ export default function RegisterPage() {
       !form.studentId ||
       !form.email ||
       !form.password ||
-      !form.confirmPassword
+      !form.confirmPassword ||
+      !form.learningGoal
     ) {
       setErrorMessage("Please complete all fields.");
       return;
@@ -74,6 +77,7 @@ export default function RegisterPage() {
         studentId: form.studentId,
         email: form.email,
         password: form.password,
+        learningGoal: form.learningGoal,
       });
 
       setShowSuccessModal(true);
@@ -106,6 +110,19 @@ export default function RegisterPage() {
     );
   };
 
+  const handleLearningGoalChange = (e) => {
+    const value = e.target.value;
+
+    setForm((prev) => ({
+      ...prev,
+      learningGoal: value,
+      customLearningGoal: value === "Other" ? prev.customLearningGoal : "",
+    }));
+
+    if (value === "Other") {
+      setIsCustomGoalMode(true);
+    }
+  };
 
   return (
     <>
@@ -150,6 +167,27 @@ export default function RegisterPage() {
                   onChange={handleChange}
                 />
 
+                <div>
+                  <label className="mb-2 block text-[18px] font-bold text-red-600">
+                    Learning Goal
+                  </label>
+
+                  <select
+                    name="learningGoal"
+                    value={form.learningGoal}
+                    onChange={handleChange}
+                    className="w-full border-b-2 border-black bg-transparent px-1 py-2 text-[14px] font-normal text-black outline-none focus:border-red-600"
+                  >
+                    <option value=""></option>
+
+                    {LEARNING_GOALS.map((goal) => (
+                      <option key={goal} value={goal}>
+                        {goal}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <AuthInput
                   label="Password"
                   type="password"
@@ -167,6 +205,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   showToggle={true}
                 />
+
               </div>
             </div>
 

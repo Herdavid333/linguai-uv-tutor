@@ -169,7 +169,7 @@ export default function HomePage() {
 
                 {/* Texto bienvenida */}
                 <div>
-                  <h2 className="text-[20px] font-bold text-white leading-tight">
+                  <h2 className=" mt-5 text-[25px] font-bold text-white leading-tight">
                     Hello {firstName} 👋
                   </h2>
 
@@ -187,8 +187,8 @@ export default function HomePage() {
                   bg-red-600
                   px-2
                   py-1
-                  -mt-1
-                  text-[13px]
+                
+                  text-[15px]
                   font-bold
                   text-white
                   shadow

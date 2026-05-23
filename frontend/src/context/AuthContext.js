@@ -66,7 +66,13 @@ export function AuthProvider({ children }) {
     return await signInWithEmailAndPassword(auth, email, password);
   };
 
-  const register = async ({ fullName, studentId, email, password }) => {
+  const register = async ({
+    fullName,
+    studentId,
+    email,
+    password,
+    learningGoal,
+  }) => {
     const existingStudentQuery = query(
       collection(db, "users"),
       where("studentId", "==", studentId)
@@ -93,6 +99,7 @@ export function AuthProvider({ children }) {
       email,
       role: "student",
       englishLevel: "Beginner (A1)",
+      learningGoal,
       createdAt: new Date().toISOString(),
     });
 
@@ -112,6 +119,21 @@ export function AuthProvider({ children }) {
     return await sendPasswordResetEmail(auth, email, actionCodeSettings);
   };
 
+  const refreshUserData = async () => {
+  if (!auth.currentUser) return;
+
+  const docRef = doc(db, "users", auth.currentUser.uid);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      setUser({
+        uid: auth.currentUser.uid,
+        email: auth.currentUser.email,
+        ...docSnap.data(),
+      });
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -120,7 +142,8 @@ export function AuthProvider({ children }) {
         login,
         register,
         logout,
-        resetPassword
+        resetPassword,
+        refreshUserData,
       }}
     >
       {children}
