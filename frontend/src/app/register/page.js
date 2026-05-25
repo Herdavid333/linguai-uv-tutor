@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import AuthCard from "../../components/auth/AuthCard.jsx";
 import AuthInput from "../../components/auth/AuthInput.jsx";
-import AuthButton from "../../components/auth/AuthButton.jsx";
+import AuthSelect from "../../components/auth/AuthSelect.jsx";
 import PasswordRequirements from "../../components/auth/PasswordRequirements.jsx";
+import AuthButton from "../../components/auth/AuthButton.jsx";
 import { LEARNING_GOALS } from "../../data/learningGoals";
 import { useAuth } from "../../context/AuthContext";
 
@@ -166,28 +167,15 @@ export default function RegisterPage() {
                   value={form.email}
                   onChange={handleChange}
                 />
-
-                <div>
-                  <label className="mb-2 block text-[18px] font-bold text-red-600">
-                    Learning Goal
-                  </label>
-
-                  <select
-                    name="learningGoal"
-                    value={form.learningGoal}
-                    onChange={handleChange}
-                    className="w-full border-b-2 border-black bg-transparent px-1 py-2 text-[14px] font-normal text-black outline-none focus:border-red-600"
-                  >
-                    <option value=""></option>
-
-                    {LEARNING_GOALS.map((goal) => (
-                      <option key={goal} value={goal}>
-                        {goal}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
+      
+                <AuthSelect
+                  label="Learning Goal"
+                  name="learningGoal"
+                  value={form.learningGoal}
+                  onChange={handleChange}
+                  options={LEARNING_GOALS}
+                />
+                  
                 <AuthInput
                   label="Password"
                   type="password"

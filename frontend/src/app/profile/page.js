@@ -21,15 +21,15 @@ import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { updatePassword } from "firebase/auth";
 import { useAuth } from "../../context/AuthContext";
 import { LEARNING_GOALS } from "../../data/learningGoals";
+import AuthInput from "../../components/auth/AuthInput.jsx";
+import AuthSelect from "../../components/auth/AuthSelect.jsx";
+import PasswordRequirements from "../../components/auth/PasswordRequirements.jsx";
+import AuthButton from "../../components/auth/AuthButton.jsx";
 
-/* import { db, auth, storage } from "../../lib/firebase";
-
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
- */
 import { db, auth } from "../../lib/firebase";
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, logout, refreshUserData } = useAuth();
+  const { user, refreshUserData } = useAuth();
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -51,11 +51,6 @@ export default function ProfilePage() {
   const [learningGoal, setLearningGoal] = useState(user?.learningGoal || "");
   const [profileImage, setProfileImage] = useState(user?.photoBase64 || null);
   const fileInputRef = useRef(null);
-
-  const handleLogout = async () => {
-    await logout();
-    router.push("/login");
-  };
 
   const handleOpenEdit = () => {
     setMessage("");
@@ -261,14 +256,7 @@ export default function ProfilePage() {
 
         {/* PROFILE MAIN */}
         <section className="px-6 py-5">
-          <div className="flex justify-end mt-2 -mr-4">
-            <button
-              onClick={handleLogout}
-              className="rounded-[5px] bg-red-600 text-[18px] -mt-5 px-5 py-1 whitespace-nowrap font-bold text-white shadow hover:bg-red-700"
-            >
-              Log out
-            </button>
-          </div>
+      
 
           <div className="-mt-2 -ml-2 grid grid-cols-[70px_1fr] gap-9 items-start">
             <div className="flex flex-col items-center w-fit">
@@ -311,12 +299,13 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <button
+          <AuthButton
             onClick={handleOpenEdit}
-            className="mt-5 w-full rounded-md bg-red-600 py-2 text-[18px] font-extrabold text-white shadow hover:bg-red-700"
+            type="button"
+            className="mt-5 py-1.5 text-[18px] sm:text-[20px]"
           >
             Edit Profile information
-          </button>
+          </AuthButton>
 
           <div className="mt-6 border-y border-black py-3 text-center">
             <p className="text-[16px] font-semibold text-black">
@@ -391,53 +380,71 @@ export default function ProfilePage() {
             </div>
 
             <form onSubmit={handleSaveProfile} className="size={20} space-y-3">
-              <ProfileInput
+              <AuthInput
                 label="Name"
+                name="fullName"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
+                labelClassName="text-[12px] text-white"
+                inputClassName="text-[12px] pb-1"
+                wrapperClassName="mb-3"
+                variant="boxed"
               />
 
-              <ProfileInput label="E-mail address" value={email} disabled />
+              <AuthInput
+                label="E-mail address"
+                name="email"
+                value={email}
+                disabled
+                labelClassName="text-[12px] text-white"
+                inputClassName="text-[12px] pb-1 bg-[#d8bfc2]"
+                wrapperClassName="mb-3"
+                variant="boxed"
+              />
 
-              <ProfileInput label="Role" value={role} disabled />
+              <AuthInput
+                label="Role"
+                name="role"
+                value={role}
+                disabled
+                labelClassName="text-[12px] text-white"
+                inputClassName="text-[12px] pb-1 bg-[#d8bfc2]"
+                wrapperClassName="mb-3"
+                variant="boxed"
+              />
 
-              <ProfileInput
+              <AuthInput
                 label="English Level"
+                name="englishLevel"
                 value={englishLevel}
                 disabled
+                labelClassName="text-[12px] text-white"
+                inputClassName="text-[12px] pb-1 bg-[#d8bfc2]"
+                wrapperClassName="mb-3"
+                variant="boxed"
               />
 
-              <div>
-                <label className="text-[12px] font-bold text-white">
-                  Learning Goal
-                </label>
+              <AuthSelect
+                label="Learning Goal"
+                name="learningGoal"
+                value={learningGoal}
+                onChange={(e) => setLearningGoal(e.target.value)}
+                options={LEARNING_GOALS}
+                labelClassName="text-[12px] text-white"
+                selectClassName="text-[12px] pb-1"
+                wrapperClassName="mb-3"
+                variant="boxed"
+              />
 
-                <select
-                  value={learningGoal}
-                  onChange={(e) => setLearningGoal(e.target.value)}
-                  className="w-full rounded px-2 py-1 text-[12px] font-semibold outline-none bg-white text-black"
-                >
-                  <option value=""></option>
-
-                  {LEARNING_GOALS.map((goal) => (
-                    <option key={goal} value={goal}>
-                      {goal}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[12px] font-bold text-white">
-                  Password
-                </label>
-
-                <input
-                  value="**************"
-                  disabled
-                  className="w-full rounded px-2 py-1 text-[12px] text-black outline-none bg-white"
-                />
-              </div>
+              <AuthInput
+                label="Password"
+                name="password"
+                type="password"
+                value="**************"
+                disabled
+                showToggle
+                variant="boxed"
+              />
 
               <p className="text-center text-[12px] text-white">
                 Do you want to change your password?
@@ -461,13 +468,12 @@ export default function ProfilePage() {
                 </p>
               )}
 
-              <button
-                type="submit"
+              <AuthButton
                 disabled={saving}
-                className="w-full rounded-md bg-red-600 py-2 text-white font-bold disabled:opacity-60 shadow hover:bg-red-700"
+                className="py-2 text-[20px]"
               >
-                {saving ? "Saving..." : "Save changes"}
-              </button>
+                Save changes
+              </AuthButton>
             </form>
           </Modal>
         )}
@@ -477,7 +483,7 @@ export default function ProfilePage() {
           <Modal>
             <div className="flex items-center justify-between mb-4">
               <h3 className="rounded-md bg-[#555] px-4 py-1 text-white font-bold text-[18px]">
-                Edit Profile information
+                Change Password
               </h3>
 
               <button onClick={() => setShowPasswordModal(false)}>
@@ -485,46 +491,48 @@ export default function ProfilePage() {
               </button>
             </div>
 
-            <form onSubmit={handleSavePassword} className="space-y-4">
-              <PasswordInput
+            <form onSubmit={handleSavePassword} className="space-y-3">
+
+              <AuthInput
                 label="New Password"
+                type="password"
+                name="newPassword"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                showPassword={showNewPassword}
-                onToggleShow={() => setShowNewPassword((prev) => !prev)}
+                showToggle
+                variant="boxed"
               />
 
-              <PasswordInput
+              <AuthInput
                 label="Confirm New Password"
+                type="password"
+                name="confirmPassword"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                showPassword={showConfirmPassword}
-                onToggleShow={() => setShowConfirmPassword((prev) => !prev)}
+                showToggle
+                variant="boxed"
               />
-              
-              <button
-                type="submit"
-                disabled={saving}
-                className="block mx-auto rounded-md bg-red-600 px-5 py-2 text-white font-bold disabled:opacity-60
-                shadow hover:bg-red-700"
-              >
-                {saving ? "Saving..." : "Save changes"}
-              </button>
 
               {message && (
                 <p className="text-center text-[12px] font-bold text-black">
                   {message}
                 </p>
               )}
+
+              <AuthButton
+                disabled={saving}
+                className="mt-2 py-2 text-[20px]"
+              >
+                {saving ? "Saving..." : "Save changes"}
+              </AuthButton>
             </form>
 
-            <div className="mt-5 border-t-4 border-[#f3a3a3] pt-3 text-[12px] font-semibold text-white">
-              <p className="font-extrabold text-white">Password Requirements</p>
-              <p>✓ Minimum 8 characters</p>
-              <p>✓ At least one uppercase letter (A-Z)</p>
-              <p>✓ At least one lowercase letter (a-z)</p>
-              <p>✓ At least one number (0-9)</p>
-              <p>✓ At least one special character (!@#$%^&*)</p>
+            <div className="mt-5 border-t-4 border-[#f3a3a3] pt-3">
+              <PasswordRequirements
+                password={newPassword}
+                isOpen={true}
+                compact={true}
+              />
             </div>
           </Modal>
         )}
@@ -569,6 +577,39 @@ function ProfileInput({ label, value, onChange, disabled = false, type = "text" 
             : "bg-white text-black"
         }`}
       />
+    </div>
+  );
+}
+
+function PasswordInput({
+  label,
+  value,
+  onChange,
+  showPassword,
+  onToggleShow,
+}) {
+  return (
+    <div>
+      <label className="text-[12px] font-bold text-white">
+        {label}
+      </label>
+
+      <div className="flex items-center rounded bg-white px-2">
+        <input
+          type={showPassword ? "text" : "password"}
+          value={value}
+          onChange={onChange}
+          className="w-full py-1 text-[12px] font-semibold text-black outline-none"
+        />
+
+        <button
+          type="button"
+          onClick={onToggleShow}
+          className="ml-2 flex items-center justify-center text-black transition duration-100 active:scale-90"
+        >
+          <Eye size={16} />
+        </button>
+      </div>
     </div>
   );
 }

@@ -12,6 +12,10 @@ import { learningUnits } from "../../data/learningContent";
 import TopicModal from "../../components/home/TopicModal";
 import ActivityModal from "../../components/home/ActivityModal";
 import UnitList from "../../components/home/UnitList";
+import AuthInput from "../../components/auth/AuthInput.jsx";
+import AuthSelect from "../../components/auth/AuthSelect.jsx";
+import PasswordRequirements from "../../components/auth/PasswordRequirements.jsx";
+import AuthButton from "../../components/auth/AuthButton.jsx";
 
 import {
   createNewConversation,
@@ -186,9 +190,9 @@ export default function HomePage() {
                   rounded-[5px]
                   bg-red-600
                   px-2
-                  py-1
-                
+                  py-2
                   text-[15px]
+                  -mt-1
                   font-bold
                   text-white
                   shadow
@@ -240,12 +244,11 @@ export default function HomePage() {
               </div>
 
               {/* Botón continuar */}
-              <button
-                onClick={() => handleSelectUnit(learningUnits[3])}
-                className="rounded-[5px] bg-red-600 text-[13px] px-4 py-2 whitespace-nowrap font-bold text-white shadow hover:bg-red-700"
+              <AuthButton
+                className="px-3 py-1 text-[20px] w-auto"
               >
                 Continue here
-              </button>
+              </AuthButton>
             </div>
           </section>
 
@@ -278,12 +281,11 @@ export default function HomePage() {
           <section className="px-4 py-3 grid grid-cols-[1fr_1fr] gap-3 items-center">
             
             {/* Botón Free Practice */}
-            <button
-              onClick={() => handleSelectUnit(learningUnits[0])}
-              className="rounded-[5px] bg-red-600 py-2 text-center text-[15px] font-bold text-white shadow hover:bg-red-700"
+            <AuthButton
+              className="py-1 text-[20px]"
             >
               Free Practice
-            </button>
+            </AuthButton>
 
             {/* Texto contextual */}
             <p className="text-center text-[15px] font-semibold text-black leading-tight">
