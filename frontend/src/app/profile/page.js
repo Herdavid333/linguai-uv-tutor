@@ -392,6 +392,17 @@ export default function ProfilePage() {
               />
 
               <AuthInput
+                label="Student ID"
+                name="studentId"
+                value={user?.studentId || ""}
+                disabled
+                labelClassName="text-[12px] text-white"
+                inputClassName="text-[12px] pb-1 bg-[#d8bfc2]"
+                wrapperClassName="mb-3"
+                variant="boxed"
+              />
+
+              <AuthInput
                 label="E-mail address"
                 name="email"
                 value={email}
