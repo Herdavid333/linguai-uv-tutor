@@ -22,7 +22,7 @@ export default function ProgressPage() {
 
   return (
     <main className="min-h-screen bg-[#e6e6e6] flex justify-center px-4 py-6 overflow-hidden">
-      <section className="w-full max-w-[390px] bg-white border-2 border-[#f3a3a3] rounded-[10px] shadow-md overflow-hidden flex flex-col">
+      <section className="w-full max-w-[390px] h-[calc(100vh-48px)] bg-white border-2 border-[#f3a3a3] rounded-[10px] shadow-md overflow-hidden flex flex-col">
         {/* HEADER */}
         <header className="shrink-0 bg-[#b8b8b8] border-b-4 border-white">
           <div className="grid grid-cols-[1fr_1px_1fr] items-center px-4 py-3">
@@ -44,23 +44,25 @@ export default function ProgressPage() {
         </header>
 
         {/* CONTENT */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden">
           {activePanel === "progress" && (
-            <div>
-              <section className="bg-[#b8b8b8] px-3 py-1">
-                <h2 className="text-[20px] font-extrabold text-black">
+            <div className="h-full min-h-0 flex flex-col">
+
+              {/* OVERALL PROGRESS */}
+              <section className="shrink-0 bg-[#b8b8b8] px-3 py-1 border-t border-white">
+                <h2 className="text-[18px] font-extrabold text-black">
                   Overall Progress
                 </h2>
               </section>
 
-              <section className="px-3 py-3">
-                <div className="grid grid-cols-[1fr_1.4fr] gap-4">
+              <section className="shrink-0 px-3 py-3">
+                <div className="grid grid-cols-[1fr_1.4fr] gap-4 items-start">
                   <div>
                     <p className="text-[16px] font-semibold text-black">
                       {averageProgress}% completed
                     </p>
 
-                    <div className="mt-1 h-4 rounded-full bg-[#9d9d9d] overflow-hidden">
+                    <div className="mt-2 h-4 rounded-full bg-[#9d9d9d] overflow-hidden">
                       <div
                         className="h-full rounded-full bg-red-600"
                         style={{ width: `${averageProgress}%` }}
@@ -68,7 +70,7 @@ export default function ProgressPage() {
                     </div>
                   </div>
 
-                  <div className="text-[15px] font-semibold text-black leading-tight">
+                  <div className="text-[16px] font-bold text-black leading-tight">
                     <p>Activities completed: {activitiesCompleted}</p>
                     <p>Words learned: {wordsLearned}</p>
                     <p>Topics practiced: {topicsPracticed}</p>
@@ -76,68 +78,78 @@ export default function ProgressPage() {
                 </div>
               </section>
 
-              <section className="bg-[#b8b8b8] px-3 py-1">
-                <h2 className="text-[20px] font-extrabold text-black">
+              {/* PROGRESS BY UNITS */}
+              <section className="shrink-0 bg-[#b8b8b8] px-3 py-1">
+                <h2 className="text-[18px] font-extrabold text-black">
                   Progress by Units
                 </h2>
               </section>
 
-              <section className="px-3 py-3 space-y-2">
-                {mockCompletedActivities.length > 0 ? (
-                  mockCompletedActivities.map((activity) => (
-                    <ProgressUnitRow
-                      key={activity.id}
-                      unitTitle={activity.unitTitle}
-                      score={activity.score}
-                    />
-                  ))
-                ) : (
-                  <p className="text-center text-[14px] font-bold text-black">
-                    No completed activities yet.
-                  </p>
-                )}
+              <section className="shrink-0 px-3 py-3">
+                <div className="max-h-[160px] overflow-y-auto pr-1 space-y-3">
+                  {mockCompletedActivities.length > 0 ? (
+                    mockCompletedActivities.map((activity) => (
+                      <ProgressUnitRow
+                        key={activity.id}
+                        unitTitle={activity.unitTitle}
+                        score={activity.score}
+                      />
+                    ))
+                  ) : (
+                    <p className="text-center text-[14px] font-bold text-black">
+                      No completed activities yet.
+                    </p>
+                  )}
+                </div>
               </section>
 
-              <section className="px-3 py-3 grid grid-cols-2 gap-4">
+              <div className="mx-3 border-t-2 border-black" />
+
+              {/* ACTION BUTTONS */}
+              <section className="shrink-0 px-3 py-3 grid grid-cols-2 gap-4">
                 <button
                   onClick={() => setActivePanel("errors")}
-                  className="rounded-md bg-red-600 px-3 py-2 text-[17px] font-extrabold text-white shadow transition-all duration-100 hover:bg-red-700 active:scale-95 active:translate-y-[2px]"
+                  className="rounded-md bg-red-600 px-3 py-2.5 text-[16px] font-extrabold text-white shadow transition-all duration-100 hover:bg-red-700 active:scale-95 active:translate-y-[2px]"
                 >
-                  Frequent Errors
+                  Frequent
+                  <br />
+                  Errors
                 </button>
 
                 <button
                   onClick={() => setActivePanel("vocabulary")}
-                  className="rounded-md bg-red-600 px-3 py-2 text-[17px] font-extrabold text-white shadow transition-all duration-100 hover:bg-red-700 active:scale-95 active:translate-y-[2px]"
+                  className="rounded-md bg-red-600 px-3 py-2.5 text-[16px] font-extrabold text-white shadow transition-all duration-100 hover:bg-red-700 active:scale-95 active:translate-y-[2px]"
                 >
-                  Vocabulary Learned
+                  Vocabulary
+                  <br />
+                  Learned
                 </button>
               </section>
 
-              <section className="bg-[#b8b8b8] px-3 py-1">
-                <h2 className="text-[20px] font-extrabold text-black">
+
+              {/* RECENT SESSION */}
+              <section className="shrink-0 bg-[#b8b8b8] px-3 py-1">
+                <h2 className="text-[18px] font-extrabold text-black">
                   Recent Practice Session
                 </h2>
               </section>
 
-              <section className="px-3 py-3">
-                <div className="grid grid-cols-[1fr_auto] gap-3 items-center">
-                  <div>
-                    <ProgressUnitRow
-                      unitTitle="Unit 1 - Presentations"
-                      score={80}
-                    />
+              <section className="flex-1 min-h-0 px-3 py-3 flex flex-col justify-center">
+                <div className="space-y-2">
+                  <ProgressUnitRow
+                    unitTitle="Unit 1 - Greetings and Introductions"
+                    score={80}
+                  />
 
-                    <p className="mt-2 text-[15px] font-bold text-black">
-                      - Introducing yourself
-                    </p>
+                  <p className="text-[15px] font-bold text-black">
+                    Topic: Introducing yourself
+                  </p>
 
-                    <p className="text-center text-[14px] font-bold text-black">
-                      [ Conversation ]
-                    </p>
-                  </div>
+                  <p className="text-[15px] font-bold text-black">
+                    Activity: Conversation
+                  </p>
 
-                  <button className="rounded-md bg-red-600 px-3 py-2 text-[14px] font-bold text-white shadow transition-all duration-100 hover:bg-red-700 active:scale-95 active:translate-y-[2px]">
+                  <button className="mx-auto mt-2 block rounded-md bg-red-600 px-5 py-2 text-[16px] font-bold text-white shadow transition-all duration-100 hover:bg-red-700 active:scale-95 active:translate-y-[2px]">
                     Practice again
                   </button>
                 </div>
