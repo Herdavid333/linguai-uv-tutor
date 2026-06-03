@@ -158,22 +158,22 @@ export default function ProgressPage() {
           )}
 
           {activePanel === "errors" && (
-            <div>
+            <div className="h-full min-h-0 flex flex-col">
               <PanelHeader
                 title="Frequent Errors"
                 onClose={() => setActivePanel("progress")}
               />
 
-              <div className="px-3 py-2 text-center border-b border-black">
-                <p className="text-[13px] font-extrabold text-black underline">
+              <div className="shrink-0 px-3 py-2 text-center border-b border-black">
+                <p className="text-[14px] font-extrabold text-black underline">
                   Understand your most common errors
                 </p>
               </div>
 
-              <div className="max-h-[430px] overflow-y-auto px-3">
+              <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-3">
                 {mockFrequentErrors.map((error) => (
                   <div key={error.id}>
-                    <h3 className="text-center text-[16px] font-extrabold text-black">
+                    <h3 className="sticky top-0 bg-white py-1 text-center text-[17px] font-extrabold text-black">
                       {error.category}
                     </h3>
 
@@ -185,19 +185,19 @@ export default function ProgressPage() {
           )}
 
           {activePanel === "vocabulary" && (
-            <div>
+            <div className="h-full min-h-0 flex flex-col">
               <PanelHeader
                 title="Vocabulary Learned"
                 onClose={() => setActivePanel("progress")}
               />
 
-              <div className="px-3 py-2 text-center border-b border-black">
+              <div className="shrink-0 px-3 py-2 text-center border-b border-black">
                 <p className="text-[15px] font-extrabold text-black">
                   Review your learned words
                 </p>
               </div>
 
-              <div className="max-h-[430px] overflow-y-auto px-4">
+              <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-3">
                 {mockVocabularyLearned.map((word) => (
                   <VocabularyCard key={word.id} {...word} />
                 ))}

@@ -5,9 +5,9 @@ export default function FrequentErrorCard({
   repeated,
 }) {
   return (
-    <div className="border-b border-black py-2 text-[11px] text-black">
-      <div className="flex justify-between gap-2">
-        <div>
+    <div className="border-b border-black py-3 text-[13px] text-black">
+      <div className="grid grid-cols-[1fr_auto] gap-3">
+        <div className="leading-tight">
           <p>
             <span className="font-extrabold text-red-600">✕</span> {wrong}
           </p>
@@ -16,10 +16,12 @@ export default function FrequentErrorCard({
           </p>
         </div>
 
-        <p className="font-bold whitespace-nowrap">Repeated: {repeated} times</p>
+        <p className="text-[11px] font-bold whitespace-nowrap">
+          Repeated: {repeated} times
+        </p>
       </div>
 
-      <p>
+      <p className="mt-1 leading-tight">
         <span className="font-extrabold">Explanation:</span> {explanation}
       </p>
     </div>
