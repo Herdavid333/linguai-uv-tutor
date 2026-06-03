@@ -1,0 +1,42 @@
+export const mockFrequentErrors = [
+  {
+    id: "1",
+    category: "Grammar",
+    wrong: "She go to school",
+    correct: "She goes to school",
+    explanation: "Third person verbs need -s.",
+    repeated: 1,
+  },
+  {
+    id: "2",
+    category: "Grammar",
+    wrong: "I am study english",
+    correct: "I am studying English",
+    explanation: "Use verb + ing after am/is/are.",
+    repeated: 4,
+  },
+  {
+    id: "3",
+    category: "Vocabulary",
+    wrong: "I assist to class",
+    correct: "I attend class",
+    explanation: "Assist is a false friend.",
+    repeated: 1,
+  },
+  {
+    id: "4",
+    category: "Capitalization",
+    wrong: "my name is hernan",
+    correct: "My name is Hernan",
+    explanation: "Names and sentences start with capital letters.",
+    repeated: 5,
+  },
+  {
+    id: "5",
+    category: "Word Order",
+    wrong: "I from Colombia am",
+    correct: "I am from Colombia",
+    explanation: "Use subject + verb + complement.",
+    repeated: 1,
+  },
+];
