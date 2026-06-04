@@ -242,9 +242,18 @@ function PanelHeader({ title, onClose }) {
 
       <button
         onClick={onClose}
-        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full border border-black p-[2px] transition active:scale-90"
+        className="
+          absolute right-2 top-1 
+          rounded-full
+          p-1
+          text-red-600
+          transition duration-100
+          active:scale-90
+          active:translate-y-[1px]
+          hover:text-red-700
+        "
       >
-        <X size={16} />
+        <X size={24} strokeWidth={3} />
       </button>
     </section>
   );

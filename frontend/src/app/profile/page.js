@@ -18,7 +18,11 @@ import {
   X,
 } from "lucide-react";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
-import { updatePassword } from "firebase/auth";
+import {
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+} from "firebase/auth";
 import { useAuth } from "../../context/AuthContext";
 import { LEARNING_GOALS } from "../../data/learningGoals";
 import AuthInput from "../../components/auth/AuthInput.jsx";
@@ -38,9 +42,6 @@ export default function ProfilePage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -51,6 +52,8 @@ export default function ProfilePage() {
   const [learningGoal, setLearningGoal] = useState(user?.learningGoal || "");
   const [profileImage, setProfileImage] = useState(user?.photoBase64 || null);
   const fileInputRef = useRef(null);
+  const [currentPassword, setCurrentPassword] = useState("");
+
 
   const handleOpenEdit = () => {
     setMessage("");
@@ -100,8 +103,9 @@ export default function ProfilePage() {
 
   const handleSavePassword = async (e) => {
     e.preventDefault();
+    setMessage("");
 
-    if (!newPassword || !confirmPassword) {
+    if (!currentPassword || !newPassword || !confirmPassword) {
       setMessage("All password fields are required.");
       return;
     }
@@ -111,19 +115,45 @@ export default function ProfilePage() {
       return;
     }
 
+    const isPasswordValid =
+      newPassword.length >= 8 &&
+      /[A-Z]/.test(newPassword) &&
+      /[a-z]/.test(newPassword) &&
+      /[0-9]/.test(newPassword) &&
+      /[!@#$%^&*(),.?":{}|<>_\-\\[\];'/`~+=]/.test(newPassword);
+
+    if (!isPasswordValid) {
+      setMessage("Password does not meet the requirements.");
+      return;
+    }
+
     try {
       setSaving(true);
+
+      const credential = EmailAuthProvider.credential(
+        auth.currentUser.email,
+        currentPassword
+      );
+
+      await reauthenticateWithCredential(auth.currentUser, credential);
 
       await updatePassword(auth.currentUser, newPassword);
 
       setMessage("Password updated successfully.");
+      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (error) {
-      console.error(error);
-      setMessage(
-        "Could not update password. You may need to log in again before changing it."
-      );
+      console.error("Password update error:", error);
+
+      if (
+        error.code === "auth/invalid-credential" ||
+        error.code === "auth/wrong-password"
+      ) {
+        setMessage("Current password is incorrect.");
+      } else {
+        setMessage("Could not update password. Please try again.");
+      }
     } finally {
       setSaving(false);
     }
@@ -374,8 +404,19 @@ export default function ProfilePage() {
                 Edit Profile information
               </h3>
 
-              <button onClick={() => setShowEditModal(false)}>
-                <X size={30} className="text-black" />
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="
+                  rounded-full
+                  p-1
+                  text-red-600
+                  transition duration-100
+                  active:scale-90
+                  active:translate-y-[1px]
+                  hover:text-red-700
+                "
+              >
+                <X size={24} strokeWidth={3} />
               </button>
             </div>
 
@@ -453,7 +494,6 @@ export default function ProfilePage() {
                 type="password"
                 value="**************"
                 disabled
-                showToggle
                 variant="boxed"
               />
 
@@ -497,12 +537,37 @@ export default function ProfilePage() {
                 Change Password
               </h3>
 
-              <button onClick={() => setShowPasswordModal(false)}>
-                <X size={30} className="text-black" />
+              <button
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setShowEditModal(true);
+                  setMessage("");
+                }}
+                className="
+                  rounded-full
+                  p-1
+                  text-red-600
+                  transition duration-100
+                  active:scale-90
+                  active:translate-y-[1px]
+                  hover:text-red-700
+                "
+              >
+                <X size={24} strokeWidth={3} />
               </button>
             </div>
 
             <form onSubmit={handleSavePassword} className="space-y-3">
+
+              <AuthInput
+                label="Current Password"
+                type="password"
+                name="currentPassword"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                showToggle
+                variant="boxed"
+              />
 
               <AuthInput
                 label="New Password"
