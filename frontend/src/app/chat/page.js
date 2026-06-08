@@ -22,7 +22,9 @@ import {
 } from "../../utils/chatModel";
 
 import { buildChatPayload } from "../../utils/buildChatPayload";
-
+import ChatSideMenu from "../../components/chat/ChatSideMenu";
+import { learningUnits } from "../../data/learningContent";
+import LearningSummaryPanel from "../../components/chat/LearningSummaryPanel";
 
 export default function ChatPage() {
   /* =========================================================
@@ -33,8 +35,9 @@ export default function ChatPage() {
   const [conversation, setConversation] = useState(null);
   const [inputMessage, setInputMessage] = useState("");
   const [isAssistantTyping, setIsAssistantTyping] = useState(false);
-
+  const [showSideMenu, setShowSideMenu] = useState(false);
   const messagesEndRef = useRef(null);
+  const [showLearningSummary, setShowLearningSummary] = useState(false);
 
   /* =========================================================
      CARGA INICIAL DE LA CONVERSACIÓN
@@ -161,7 +164,7 @@ export default function ChatPage() {
       {/* =========================================================
          CONTENEDOR PRINCIPAL DEL CHAT
       ========================================================= */}
-      <section className="w-full max-w-[390px] sm:max-w-[520px] md:max-w-[620px] h-full bg-white border-2 border-[#f3a3a3] rounded-[8px] shadow-md overflow-hidden flex flex-col">
+      <section className="relative w-full max-w-[390px] sm:max-w-[520px] md:max-w-[620px] h-full bg-white border-2 border-[#f3a3a3] rounded-[8px] shadow-md overflow-hidden flex flex-col">
         
         {/* =========================================================
            HEADER PRINCIPAL
@@ -181,8 +184,10 @@ export default function ChatPage() {
 
             <div className="h-10 bg-white" />
 
-            <p className="text-center text-[16px] font-bold leading-tight text-black">
-              Univalle&apos;s AI tutor for learning English
+            <p className="text-center text-[14px] sm:text-[16px] font-bold leading-tight text-black">
+              Univalle&apos;s AI tutor for 
+              <br />  
+              learning English
             </p>
           </div>
         </header>
@@ -193,7 +198,9 @@ export default function ChatPage() {
         ========================================================= */}
         <div className="shrink-0 grid grid-cols-[38px_1fr_46px] items-center bg-[#9d9d9d] border-b border-white">
           {/* Botón de menú */}
-          <button className="flex items-center justify-center border-r border-white py-1">
+          <button 
+            onClick={() => setShowSideMenu(true)}
+            className="flex items-center justify-center border-r border-white py-1">
             <Menu size={25} className="text-black" />
           </button>
 
@@ -301,6 +308,11 @@ export default function ChatPage() {
           <div ref={messagesEndRef} />
         </div>
 
+        <LearningSummaryPanel
+          isOpen={showLearningSummary}
+          onClose={() => setShowLearningSummary(false)}
+        />
+
         {/* =========================================================
            FOOTER DEL CHAT
            Learning Summary + Input de mensaje
@@ -310,7 +322,15 @@ export default function ChatPage() {
           {/* =========================================================
              BOTÓN LEARNING SUMMARY
           ========================================================= */}
-          <button className="mb-2 rounded-md bg-[#9d9d9d] px-3 py-1 text-[14px] font-extrabold text-white shadow">
+          <button
+            type="button"
+            onClick={() => setShowLearningSummary((prev) => !prev)}
+            className={`mb-2 rounded-md px-3 py-1 text-[14px] font-extrabold text-white shadow transition-all duration-100 hover:scale-[1.02] active:scale-95 active:translate-y-[1px] ${
+              showLearningSummary
+                ? "bg-red-600 hover:bg-red-700"
+                : "bg-[#9d9d9d] hover:bg-[#8c8c8c]"
+            }`}
+          >
             Learning summary
           </button>
 
@@ -352,6 +372,30 @@ export default function ChatPage() {
             </button>
           </form>
         </div>
+
+        <ChatSideMenu
+          isOpen={showSideMenu}
+          onClose={() => setShowSideMenu(false)}
+          units={learningUnits}
+          currentContext={conversation.context}
+          onChangeContext={(newContext) => {
+            const updatedConversation = {
+              ...conversation,
+              context: newContext,
+              messages: [
+                ...conversation.messages,
+                createMessage({
+                  role: MESSAGE_ROLES.ASSISTANT,
+                  content: `Great! Now let’s practice ${newContext.topicTitle} through ${newContext.activityName}.`,
+                }),
+              ],
+              updatedAt: Date.now(),
+            };
+
+            setConversation(updatedConversation);
+            saveConversation(updatedConversation);
+          }}
+        />
       </section>
     </main>
   );

@@ -29,6 +29,7 @@ import AuthInput from "../../components/auth/AuthInput.jsx";
 import AuthSelect from "../../components/auth/AuthSelect.jsx";
 import PasswordRequirements from "../../components/auth/PasswordRequirements.jsx";
 import AuthButton from "../../components/auth/AuthButton.jsx";
+import VoiceSettingsPanel from "../../components/settings/VoiceSettingsPanel";
 
 import { db, auth } from "../../lib/firebase";
 export default function ProfilePage() {
@@ -53,7 +54,7 @@ export default function ProfilePage() {
   const [profileImage, setProfileImage] = useState(user?.photoBase64 || null);
   const fileInputRef = useRef(null);
   const [currentPassword, setCurrentPassword] = useState("");
-
+  const [activeSetting, setActiveSetting] = useState(null);
 
   const handleOpenEdit = () => {
     setMessage("");
@@ -286,8 +287,6 @@ export default function ProfilePage() {
 
         {/* PROFILE MAIN */}
         <section className="px-6 py-5">
-      
-
           <div className="-mt-2 -ml-2 grid grid-cols-[70px_1fr] gap-9 items-start">
             <div className="flex flex-col items-center w-fit">
               <div className="h-24 w-24 rounded-full bg-[#9d9d9d] flex items-center justify-center overflow-hidden">
@@ -350,12 +349,47 @@ export default function ProfilePage() {
             Settings
           </h3>
 
-          <div className="mt-3 space-y-2">
-            <SettingRow icon={<Volume2 size={18} />} label="Voice" />
-            <SettingRow icon={<Globe size={18} />} label="Language" />
-            <SettingRow icon={<MessageSquareText size={18} />} label="Feedback" />
-            <SettingRow icon={<SlidersHorizontal size={18} />} label="Learning level" />
-            <SettingRow icon={<Bell size={18} />} label="Notifications" />
+          <div className="relative mt-3">
+            <div className="space-y-2">
+              <SettingRow
+                icon={<Volume2 size={18} />}
+                label="Voice settings"
+                isActive={activeSetting === "voice"}
+                onClick={() =>
+                  setActiveSetting(activeSetting === "voice" ? null : "voice")
+                }
+              />
+
+              <SettingRow
+                icon={<Globe size={18} />}
+                label="Language"
+                onClick={() => setActiveSetting("language")}
+              />
+
+              <SettingRow
+                icon={<MessageSquareText size={18} />}
+                label="Feedback"
+                onClick={() => setActiveSetting("feedback")}
+              />
+
+              <SettingRow
+                icon={<SlidersHorizontal size={18} />}
+                label="Learning level"
+                onClick={() => setActiveSetting("learningLevel")}
+              />
+
+              <SettingRow
+                icon={<Bell size={18} />}
+                label="Notifications"
+                onClick={() => setActiveSetting("notifications")}
+              />
+            </div>
+
+            {activeSetting === "voice" && (
+              <div className="absolute left-0 right-0 top-[34px] z-20">
+                <VoiceSettingsPanel />
+              </div>
+            )}
           </div>
         </section>
 
@@ -617,14 +651,31 @@ export default function ProfilePage() {
   );
 }
 
-function SettingRow({ icon, label }) {
+function SettingRow({ icon, label, onClick, isActive = false }) {
   return (
-    <button className="w-full rounded-sm bg-[#ffb3b3] px-3 py-1 flex items-center justify-between shadow">
+    <button
+      type="button"
+      onClick={onClick}
+      className={`
+        w-full rounded-sm border border-red-600
+        bg-[#ffb3b3]
+        px-3 py-1
+        flex items-center justify-between
+        shadow
+        transition duration-100
+        active:scale-95
+        active:translate-y-[1px]
+        hover:bg-red-200
+      `}
+    >
       <span className="flex items-center gap-3 text-[14px] font-bold text-black">
         {icon}
         {label}
       </span>
-      <span className="text-black font-extrabold">▶</span>
+
+      <span className="text-black font-extrabold">
+        {isActive ? "▼" : "▶"}
+      </span>
     </button>
   );
 }
