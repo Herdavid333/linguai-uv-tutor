@@ -30,6 +30,10 @@ import AuthSelect from "../../components/auth/AuthSelect.jsx";
 import PasswordRequirements from "../../components/auth/PasswordRequirements.jsx";
 import AuthButton from "../../components/auth/AuthButton.jsx";
 import VoiceSettingsPanel from "../../components/settings/VoiceSettingsPanel";
+import LanguageSettingsPanel from "../../components/settings/LanguageSettingsPanel";
+import FeedbackSettingsPanel from "../../components/settings/FeedbackSettingsPanel";
+import PracticeDifficultySettingsPanel from "../../components/settings/PracticeDifficultySettingsPanel";
+import NotificationsSettingsPanel from "../../components/settings/NotificationsSettingsPanel";
 
 import { db, auth } from "../../lib/firebase";
 export default function ProfilePage() {
@@ -349,45 +353,103 @@ export default function ProfilePage() {
             Settings
           </h3>
 
-          <div className="relative mt-3">
-            <div className="space-y-2">
-              <SettingRow
-                icon={<Volume2 size={18} />}
-                label="Voice settings"
-                isActive={activeSetting === "voice"}
-                onClick={() =>
-                  setActiveSetting(activeSetting === "voice" ? null : "voice")
-                }
-              />
+          <div className="relative mt-3 min-h-[225px]">
+            {activeSetting === null && (
+              <div className="space-y-2">
+                <SettingRow
+                  icon={<Volume2 size={18} />}
+                  label="Voice settings"
+                  onClick={() => setActiveSetting("voice")}
+                />
 
-              <SettingRow
-                icon={<Globe size={18} />}
-                label="Language"
-                onClick={() => setActiveSetting("language")}
-              />
+                <SettingRow
+                  icon={<Globe size={18} />}
+                  label="Language settings"
+                  onClick={() => setActiveSetting("language")}
+                />
 
-              <SettingRow
-                icon={<MessageSquareText size={18} />}
-                label="Feedback"
-                onClick={() => setActiveSetting("feedback")}
-              />
+                <SettingRow
+                  icon={<MessageSquareText size={18} />}
+                  label="Feedback settings"
+                  onClick={() => setActiveSetting("feedback")}
+                />
 
-              <SettingRow
-                icon={<SlidersHorizontal size={18} />}
-                label="Learning level"
-                onClick={() => setActiveSetting("learningLevel")}
-              />
+                <SettingRow
+                  icon={<SlidersHorizontal size={18} />}
+                  label="Practice difficulty"
+                  onClick={() => setActiveSetting("practiceDifficulty")}
+                />
 
-              <SettingRow
-                icon={<Bell size={18} />}
-                label="Notifications"
-                onClick={() => setActiveSetting("notifications")}
-              />
-            </div>
+                <SettingRow
+                  icon={<Bell size={18} />}
+                  label="Notifications"
+                  onClick={() => setActiveSetting("notifications")}
+                />
+              </div>
+            )}
 
             {activeSetting === "voice" && (
-              <div className="absolute left-0 right-0 top-[34px] z-20">
+              <div>
+                <SettingRow
+                  icon={<Volume2 size={18} />}
+                  label="Voice settings"
+                  isActive
+                  onClick={() => setActiveSetting(null)}
+                />
+
                 <VoiceSettingsPanel />
+              </div>
+            )}
+
+            {activeSetting === "language" && (
+              <div>
+                <SettingRow
+                  icon={<Globe size={18} />}
+                  label="Language settings"
+                  isActive
+                  onClick={() => setActiveSetting(null)}
+                />
+
+                <LanguageSettingsPanel />
+              </div>
+            )}
+
+            {activeSetting === "feedback" && (
+              <div>
+                <SettingRow
+                  icon={<MessageSquareText size={18} />}
+                  label="Feedback settings"
+                  isActive
+                  onClick={() => setActiveSetting(null)}
+                />
+
+                <FeedbackSettingsPanel />
+              </div>
+            )}
+
+            {activeSetting === "practiceDifficulty" && (
+              <div>
+                <SettingRow
+                  icon={<SlidersHorizontal size={18} />}
+                  label="Practice difficulty"
+                  isActive
+                  onClick={() => setActiveSetting(null)}
+                />
+
+                <PracticeDifficultySettingsPanel />
+              </div>
+            )}
+
+            {activeSetting === "notifications" && (
+              <div>
+                <SettingRow
+                  icon={<Bell size={18} />}
+                  label="Notifications"
+                  isActive
+                  onClick={() => setActiveSetting(null)}
+                />
+
+                <NotificationsSettingsPanel />
               </div>
             )}
           </div>

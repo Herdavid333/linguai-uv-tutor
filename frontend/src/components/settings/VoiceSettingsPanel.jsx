@@ -24,7 +24,7 @@ export default function VoiceSettingsPanel() {
       />
 
       <div className="flex items-center justify-between gap-3">
-        <span className="text-[14px] font-semibold text-black">
+        <span className="text-[15px] font-semibold text-black">
           Speech speed
         </span>
 

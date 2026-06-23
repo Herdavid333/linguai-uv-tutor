@@ -19,6 +19,8 @@ export default function ProgressPage() {
   const averageProgress = 40;
   const wordsLearned = mockVocabularyLearned.length;
   const topicsPracticed = 5;
+  const practiceSessions = 8;
+  const learningStreak = 5;
 
   return (
     <main className="min-h-screen bg-[#e6e6e6] flex justify-center px-4 py-6 overflow-hidden">
@@ -55,14 +57,14 @@ export default function ProgressPage() {
                 </h2>
               </section>
 
-              <section className="shrink-0 px-3 py-3">
-                <div className="grid grid-cols-[1fr_1.4fr] gap-4 items-start">
+              <section className="shrink-0 px-3 py-2">
+                <div className="grid grid-cols-[1fr_1.45fr] gap-3 items-start">
                   <div>
-                    <p className="text-[16px] font-semibold text-black">
+                    <p className="text-[16px] font-bold text-black">
                       {averageProgress}% completed
                     </p>
 
-                    <div className="mt-2 h-4 rounded-full bg-[#9d9d9d] overflow-hidden">
+                    <div className="mt-1 h-3.5 rounded-full bg-[#9d9d9d] overflow-hidden">
                       <div
                         className="h-full rounded-full bg-red-600"
                         style={{ width: `${averageProgress}%` }}
@@ -70,11 +72,35 @@ export default function ProgressPage() {
                     </div>
                   </div>
 
-                  <div className="text-[16px] font-bold text-black leading-tight">
-                    <p>Activities completed: {activitiesCompleted}</p>
-                    <p>Words learned: {wordsLearned}</p>
-                    <p>Topics practiced: {topicsPracticed}</p>
+                  <div className="text-[15px] font-bold text-black leading-[1.15]">
+                    <p>
+                      <span className="font-extrabold text-red-600">
+                        Activities completed:
+                      </span>{" "}
+                      {activitiesCompleted}
+                    </p>
+
+                    <p>
+                      <span className="font-extrabold text-red-600">
+                        Topics learned:
+                      </span>{" "}
+                      {topicsPracticed}
+                    </p>
+
+                    <p>
+                      <span className="font-extrabold text-red-600">
+                        Practice sessions:
+                      </span>{" "}
+                      {practiceSessions}
+                    </p>
                   </div>
+                </div>
+
+                {/* Learning Streak */}
+                <div className="mt-2 text-center">
+                  <p className="text-[16px] font-extrabold text-black">
+                   Learning streak 🔥 {learningStreak} days  🔥 
+                  </p>
                 </div>
               </section>
 
@@ -85,8 +111,8 @@ export default function ProgressPage() {
                 </h2>
               </section>
 
-              <section className="shrink-0 px-3 py-3">
-                <div className="max-h-[160px] overflow-y-auto pr-1 space-y-3">
+              <section className="shrink-0 px-3 py-2">
+                <div className="max-h-[110px] overflow-y-auto pr-1 space-y-3">
                   {mockCompletedActivities.length > 0 ? (
                     mockCompletedActivities.map((activity) => (
                       <ProgressUnitRow
@@ -106,50 +132,91 @@ export default function ProgressPage() {
               <div className="mx-3 border-t-2 border-black" />
 
               {/* ACTION BUTTONS */}
-              <section className="shrink-0 px-3 py-3 grid grid-cols-2 gap-4">
-                <button
-                  onClick={() => setActivePanel("errors")}
-                  className="rounded-md bg-red-600 px-3 py-2.5 text-[16px] font-extrabold text-white shadow transition-all duration-100 hover:bg-red-700 active:scale-95 active:translate-y-[2px]"
-                >
-                  Frequent
-                  <br />
-                  Errors
-                </button>
+              <section className="shrink-0 px-3 py-2">
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setActivePanel("errors")}
+                    className="rounded-md bg-red-600 px-3 py-1.5 text-[15px] font-extrabold text-white shadow transition-all duration-100 hover:bg-red-700 active:scale-95 active:translate-y-[2px]"
+                  >
+                    Frequent
+                    <br />
+                    Errors
+                  </button>
+
+                  <button
+                    onClick={() => setActivePanel("vocabulary")}
+                    className="rounded-md bg-red-600 px-3 py-1.5 text-[15px] font-extrabold text-white shadow transition-all duration-100 hover:bg-red-700 active:scale-95 active:translate-y-[2px]"
+                  >
+                    Vocabulary
+                    <br />
+                    Learned
+                  </button>
+                </div>
 
                 <button
-                  onClick={() => setActivePanel("vocabulary")}
-                  className="rounded-md bg-red-600 px-3 py-2.5 text-[16px] font-extrabold text-white shadow transition-all duration-100 hover:bg-red-700 active:scale-95 active:translate-y-[2px]"
+                  onClick={() => setActivePanel("history")}
+                  className="mt-2 w-full rounded-md bg-red-600 px-3 py-1.5 text-[15px] font-extrabold text-white shadow transition-all duration-100 hover:bg-red-700 active:scale-95 active:translate-y-[2px]"
                 >
-                  Vocabulary
-                  <br />
-                  Learned
+                  Activity History
                 </button>
               </section>
 
 
               {/* RECENT SESSION */}
               <section className="shrink-0 bg-[#b8b8b8] px-3 py-1">
-                <h2 className="text-[18px] font-extrabold text-black">
+                <h2 className="text-[17px] font-extrabold text-black">
                   Recent Practice Session
                 </h2>
               </section>
 
-              <section className="flex-1 min-h-0 px-3 py-3 flex flex-col justify-center">
-                <div className="space-y-2">
-                  <ProgressUnitRow
-                    unitTitle="Unit 1 - Greetings and Introductions"
-                    score={80}
-                  />
+              <section className="flex-1 min-h-0 px-3 py-3">
+                <div className="space-y-2 text-[15px] font-bold text-black leading-[1.15]">
+                  <div className="space-y-1">
+                    <div className="grid grid-cols-[1fr_auto] items-start gap-2">
+                      <div>
+                        <p className="font-extrabold text-red-600">
+                          Unit 1 :
+                        </p>
 
-                  <p className="text-[15px] font-bold text-black">
-                    Topic: Introducing yourself
-                  </p>
+                        <p className=" font-extrabold text-red-600">
+                          Greetings and Introductions
+                        </p>
+                      </div>
 
-                  <p className="text-[15px] font-bold text-black">
-                    Activity: Conversation
-                  </p>
+                      <div className="flex items-center gap-2">
+                        <div className="h-3 w-[80px] rounded-full bg-[#9d9d9d] overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-red-600"
+                            style={{ width: "80%" }}
+                          />
+                        </div>
 
-                  <button className="mx-auto mt-2 block rounded-md bg-red-600 px-5 py-2 text-[16px] font-bold text-white shadow transition-all duration-100 hover:bg-red-700 active:scale-95 active:translate-y-[2px]">
+                        <span className="text-[15px] font-bold">
+                          80%
+                        </span>
+                      </div>
+                    </div>
+
+                    <p className="pl-12">
+                      <span className="font-extrabold text-red-600">
+                        Topic:
+                      </span>{" "}
+                      <span className="font-semibold text-black">
+                        Introducing yourself
+                      </span>
+                    </p>
+
+                    <p className="pl-24">
+                      <span className="font-extrabold text-red-600">
+                        Activity:
+                      </span>{" "}
+                      <span className="font-semibold text-black">
+                        Conversation
+                      </span>
+                    </p>
+                  </div>
+
+                  <button className="mx-auto mt-1 block rounded-md bg-red-600 px-4 py-1.5 text-[15px] font-bold text-white shadow transition-all duration-100 hover:bg-red-700 active:scale-95 active:translate-y-[2px]">
                     Practice again
                   </button>
                 </div>
@@ -165,7 +232,7 @@ export default function ProgressPage() {
               />
 
               <div className="shrink-0 px-3 py-2 text-center border-b border-black">
-                <p className="text-[14px] font-extrabold text-black underline">
+                <p className="text-[16px] font-extrabold text-black underline">
                   Understand your most common errors
                 </p>
               </div>
@@ -173,7 +240,7 @@ export default function ProgressPage() {
               <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-3">
                 {mockFrequentErrors.map((error) => (
                   <div key={error.id}>
-                    <h3 className="sticky top-0 bg-white py-1 text-center text-[17px] font-extrabold text-black">
+                    <h3 className="sticky top-0 bg-white py-1 text-center text-[18px] font-extrabold text-black">
                       {error.category}
                     </h3>
 
@@ -192,7 +259,7 @@ export default function ProgressPage() {
               />
 
               <div className="shrink-0 px-3 py-2 text-center border-b border-black">
-                <p className="text-[15px] font-extrabold text-black">
+                <p className="text-[18px] font-extrabold text-black">
                   Review your learned words
                 </p>
               </div>
@@ -200,6 +267,53 @@ export default function ProgressPage() {
               <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-3">
                 {mockVocabularyLearned.map((word) => (
                   <VocabularyCard key={word.id} {...word} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activePanel === "history" && (
+            <div className="h-full min-h-0 flex flex-col">
+              <PanelHeader
+                title="Activity History"
+                onClose={() => setActivePanel("progress")}
+              />
+
+              <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-3">
+                {mockCompletedActivities.map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="rounded-md bg-[#d9d9d9] p-3 text-[13px] font-bold text-black shadow"
+                  >
+                    <p className="text-red-600">{activity.completedAt}</p>
+                    <p>{activity.unitTitle}</p>
+                    <p>
+                      <span className="font-extrabold text-red-600">
+                        Topic:
+                      </span>{" "}
+                      <span className="font-semibold text-black">
+                        {activity.topicTitle}
+                      </span>
+                    </p>
+
+                    <p>
+                      <span className="font-extrabold text-red-600">
+                        Activity:
+                      </span>{" "}
+                      <span className="font-semibold text-black">
+                        {activity.activityType}
+                      </span>
+                    </p>
+
+                    <p>
+                      <span className="font-extrabold text-red-600">
+                        Result:
+                      </span>{" "}
+                      <span className="font-semibold text-black">
+                        {activity.score}%
+                      </span>
+                    </p>
+                  </div>
                 ))}
               </div>
             </div>

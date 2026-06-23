@@ -2,16 +2,16 @@
 
 export default function SettingSwitch({ label, value, onChange }) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      <span className="text-[16px] font-semibold text-black">
+    <div className="grid grid-cols-[1fr_auto] items-center gap-3">
+      <span className="text-[16px] font-semibold text-black leading-tight">
         {label}
       </span>
 
-      <div className="flex overflow-hidden">
+      <div className="flex shrink-0 overflow-hidden">
         <button
           type="button"
           onClick={() => onChange(true)}
-          className={`px-3 py-1 text-[14px] font-extrabold transition duration-100 active:scale-95 ${
+          className={`w-[34px] py-1 text-[16px] font-extrabold transition duration-100 active:scale-95 ${
             value ? "bg-red-600 text-white" : "bg-white text-black"
           }`}
         >
@@ -21,7 +21,7 @@ export default function SettingSwitch({ label, value, onChange }) {
         <button
           type="button"
           onClick={() => onChange(false)}
-          className={`px-3 py-1 text-[14px] font-extrabold transition duration-100 active:scale-95 ${
+          className={`w-[34px] py-1 text-[16px] font-extrabold transition duration-100 active:scale-95 ${
             !value ? "bg-red-600 text-white" : "bg-white text-black"
           }`}
         >
