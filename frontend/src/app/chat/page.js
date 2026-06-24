@@ -25,13 +25,18 @@ import { buildChatPayload } from "../../utils/buildChatPayload";
 import ChatSideMenu from "../../components/chat/ChatSideMenu";
 import { learningUnits } from "../../data/learningContent";
 import LearningSummaryPanel from "../../components/chat/LearningSummaryPanel";
+import { useAuth } from "../../context/AuthContext";
+import {
+  createPracticeHistoryItem,
+  savePracticeHistory,
+} from "../../services/practiceHistoryService";
 
 export default function ChatPage() {
   /* =========================================================
      HOOKS Y ESTADOS PRINCIPALES
   ========================================================= */
   const router = useRouter();
-
+  const { user } = useAuth();
   const [conversation, setConversation] = useState(null);
   const [inputMessage, setInputMessage] = useState("");
   const [isAssistantTyping, setIsAssistantTyping] = useState(false);
@@ -72,6 +77,13 @@ export default function ChatPage() {
     });
   }, [conversation?.messages, isAssistantTyping]);
 
+
+  useEffect(() => {
+    if (!conversation?.context || !user?.uid) return;
+
+    registerPracticeHistory(conversation.context);
+  }, [conversation?.context, user?.uid]);
+  
   /* =========================================================
      ENVÍO DE MENSAJES AL CHAT
   ========================================================= */
@@ -142,6 +154,37 @@ export default function ChatPage() {
       saveConversation(conversationWithError);
     } finally {
       setIsAssistantTyping(false);
+    }
+  };
+
+  const registerPracticeHistory = async (context) => {
+    if (!user?.uid || !context) return;
+
+    const historyKey = `practice_registered_${user.uid}_${context.unitId}_${context.topicId}_${context.activityType}_${context.activityName}`;
+
+    if (sessionStorage.getItem(historyKey)) return;
+
+    try {
+      const historyItem = createPracticeHistoryItem({
+        userId: user.uid,
+        unitId: context.unitId,
+        unitTitle: context.unitTitle,
+        topicId: context.topicId,
+        topicTitle: context.topicTitle,
+        activityType: context.activityType,
+        activityName: context.activityName,
+        score: 0,
+        messagesCount: 0,
+        correctionsCount: 0,
+        newWordsCount: 0,
+        status: "started",
+      });
+
+      await savePracticeHistory(historyItem);
+
+      sessionStorage.setItem(historyKey, "true");
+    } catch (error) {
+      console.error("Error registering practice history:", error);
     }
   };
 
@@ -378,7 +421,9 @@ export default function ChatPage() {
           onClose={() => setShowSideMenu(false)}
           units={learningUnits}
           currentContext={conversation.context}
-          onChangeContext={(newContext) => {
+          onChangeContext={async (newContext) => {
+            await registerPracticeHistory(newContext);
+            
             const updatedConversation = {
               ...conversation,
               context: newContext,
