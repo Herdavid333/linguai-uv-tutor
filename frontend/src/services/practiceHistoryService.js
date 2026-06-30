@@ -1,4 +1,13 @@
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  serverTimestamp,
+  query,
+  where,
+  orderBy,
+  getDocs,
+} from "firebase/firestore";
+
 import { db } from "../lib/firebase";
 
 export const createPracticeHistoryItem = ({
@@ -48,4 +57,21 @@ export const savePracticeHistory = async (historyItem) => {
   });
 
   return docRef.id;
+};
+
+export const getUserPracticeHistory = async (userId) => {
+  if (!userId) return [];
+
+  const historyQuery = query(
+    collection(db, "practiceHistory"),
+    where("userId", "==", userId),
+    orderBy("startedAt", "desc")
+  );
+
+  const querySnapshot = await getDocs(historyQuery);
+
+  return querySnapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
 };

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Home, User, X } from "lucide-react";
 
 import { mockCompletedActivities } from "../../data/mockCompletedActivities";
@@ -12,15 +12,57 @@ import ProgressUnitRow from "../../components/progress/ProgressUnitRow";
 import FrequentErrorCard from "../../components/progress/FrequentErrorCard";
 import VocabularyCard from "../../components/progress/VocabularyCard";
 
+import { useAuth } from "../../context/AuthContext";
+import { getUserPracticeHistory } from "../../services/practiceHistoryService";
+import ActivityHistoryCard from "../../components/progress/ActivityHistoryCard";
+import {
+  calculateProgressStats,
+  calculateUnitProgress,
+} from "../../utils/progressCalculations";
+
+import { learningUnits } from "../../data/learningContent";
+
 export default function ProgressPage() {
   const [activePanel, setActivePanel] = useState("progress");
 
-  const activitiesCompleted = mockCompletedActivities.length;
-  const averageProgress = 40;
-  const wordsLearned = mockVocabularyLearned.length;
-  const topicsPracticed = 5;
-  const practiceSessions = 8;
-  const learningStreak = 5;
+  const { user } = useAuth();
+  const [practiceHistory, setPracticeHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  const {
+    activitiesCompleted,
+    practiceSessions,
+    topicsLearned,
+    learningStreak,
+  } = calculateProgressStats(practiceHistory);
+
+  const unitProgress = calculateUnitProgress(practiceHistory, learningUnits);
+
+  const averageProgress =
+    unitProgress.length > 0
+      ? Math.round(
+          unitProgress.reduce((sum, unit) => sum + unit.score, 0) /
+            unitProgress.length
+        )
+      : 0;
+
+  useEffect(() => {
+    const loadHistory = async () => {
+      if (!user?.uid) return;
+
+      try {
+        setLoadingHistory(true);
+        const history = await getUserPracticeHistory(user.uid);
+        setPracticeHistory(history);
+      } catch (error) {
+        console.error("Error loading practice history:", error);
+      } finally {
+        setLoadingHistory(false);
+      }
+    };
+
+    loadHistory();
+  }, [user?.uid]);
 
   return (
     <main className="min-h-screen bg-[#e6e6e6] flex justify-center px-4 py-6 overflow-hidden">
@@ -84,7 +126,7 @@ export default function ProgressPage() {
                       <span className="font-extrabold text-red-600">
                         Topics learned:
                       </span>{" "}
-                      {topicsPracticed}
+                      {topicsLearned}
                     </p>
 
                     <p>
@@ -113,19 +155,13 @@ export default function ProgressPage() {
 
               <section className="shrink-0 px-3 py-2">
                 <div className="max-h-[110px] overflow-y-auto pr-1 space-y-3">
-                  {mockCompletedActivities.length > 0 ? (
-                    mockCompletedActivities.map((activity) => (
-                      <ProgressUnitRow
-                        key={activity.id}
-                        unitTitle={activity.unitTitle}
-                        score={activity.score}
-                      />
-                    ))
-                  ) : (
-                    <p className="text-center text-[14px] font-bold text-black">
-                      No completed activities yet.
-                    </p>
-                  )}
+                  {unitProgress.map((unit) => (
+                    <ProgressUnitRow
+                      key={unit.id}
+                      unitTitle={unit.unitTitle}
+                      score={unit.score}
+                    />
+                  ))}
                 </div>
               </section>
 
@@ -280,41 +316,22 @@ export default function ProgressPage() {
               />
 
               <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-3">
-                {mockCompletedActivities.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="rounded-md bg-[#d9d9d9] p-3 text-[13px] font-bold text-black shadow"
-                  >
-                    <p className="text-red-600">{activity.completedAt}</p>
-                    <p>{activity.unitTitle}</p>
-                    <p>
-                      <span className="font-extrabold text-red-600">
-                        Topic:
-                      </span>{" "}
-                      <span className="font-semibold text-black">
-                        {activity.topicTitle}
-                      </span>
-                    </p>
-
-                    <p>
-                      <span className="font-extrabold text-red-600">
-                        Activity:
-                      </span>{" "}
-                      <span className="font-semibold text-black">
-                        {activity.activityType}
-                      </span>
-                    </p>
-
-                    <p>
-                      <span className="font-extrabold text-red-600">
-                        Result:
-                      </span>{" "}
-                      <span className="font-semibold text-black">
-                        {activity.score}%
-                      </span>
-                    </p>
-                  </div>
-                ))}
+                {loadingHistory ? (
+                  <p className="text-center text-[14px] font-bold text-black">
+                    Loading activity history...
+                  </p>
+                ) : practiceHistory.length === 0 ? (
+                  <p className="text-center text-[14px] font-bold text-black">
+                    No practice sessions registered yet.
+                  </p>
+                ) : (
+                  practiceHistory.map((activity) => (
+                    <ActivityHistoryCard
+                      key={activity.id}
+                      activity={activity}
+                    />
+                  ))
+                )}
               </div>
             </div>
           )}
