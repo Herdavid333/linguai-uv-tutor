@@ -1,29 +1,35 @@
-import { generatePedagogicalResponse } from "../../../utils/pedagogicalResponse";
+import { generateTutorResponse } from "@/lib/AI/tutorService";
 
 export async function POST(request) {
   try {
     const body = await request.json();
 
-    const { context, messages, latestMessage } = body;
+    const {
+      unit,
+      topic,
+      activity,
+      difficulty,
+      recentMessages = [],
+      userMessage,
+    } = body;
 
-    if (!context || !latestMessage) {
+    if (!unit || !topic || !activity || !userMessage) {
       return Response.json(
-        { error: "Missing conversation context or latest message." },
+        { error: "Missing unit, topic, activity, or user message." },
         { status: 400 }
       );
     }
 
-    const responseText = generatePedagogicalResponse({
-      context,
-      messages,
-      latestMessage,
+    const aiResponse = await generateTutorResponse({
+      unit,
+      topic,
+      activity,
+      difficulty,
+      recentMessages,
+      userMessage,
     });
 
-    return Response.json({
-      role: "assistant",
-      content: responseText,
-      receivedContext: context,
-    });
+    return Response.json(aiResponse);
   } catch (error) {
     console.error("Chat API error:", error);
 
