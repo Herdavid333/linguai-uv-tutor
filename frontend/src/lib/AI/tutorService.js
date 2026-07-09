@@ -1,5 +1,10 @@
-import { openai } from "./openaiClient";
-import { buildChatMessages } from "./builders/buildChatMessages";
+import { GoogleGenAI } from "@google/genai";
+import { buildTutorSystemPrompt } from "./prompts/tutorPrompt";
+import { buildContext } from "./builders/buildContext";
+
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
 
 const fallbackResponse = {
   assistantReply:
@@ -26,28 +31,38 @@ export async function generateTutorResponse({
   userMessage,
 }) {
   try {
-    const messages = buildChatMessages({
+    const systemInstruction = buildTutorSystemPrompt();
+
+    const context = buildContext({
       unit,
       topic,
       activity,
       difficulty,
-      recentMessages,
       userMessage,
     });
 
-    const response = await openai.responses.create({
-      model: "gpt-4.1-mini",
-      input: messages,
-      temperature: 0.4,
+    const conversationHistory = recentMessages
+      .map((message) => `${message.role}: ${message.content}`)
+      .join("\n");
+
+    const prompt = `
+Recent conversation:
+${conversationHistory || "No previous messages."}
+
+${context}
+`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        systemInstruction,
+        temperature: 0.4,
+        responseMimeType: "application/json",
+      },
     });
 
-    const rawText = response.output_text;
-
-    if (!rawText) {
-      throw new Error("Empty response from OpenAI.");
-    }
-
-    return JSON.parse(rawText);
+    return JSON.parse(response.text);
   } catch (error) {
     console.error("Error generating tutor response:", error);
     return fallbackResponse;

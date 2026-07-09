@@ -1,4 +1,4 @@
-import { generateTutorResponse } from "@/lib/AI/tutorService";
+import { generateTutorResponse } from "../../../lib/AI/tutorService";
 
 export async function POST(request) {
   try {
