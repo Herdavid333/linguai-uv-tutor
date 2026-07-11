@@ -13,6 +13,8 @@ export async function POST(request) {
       userMessage,
     } = body;
 
+    console.log("BODY /api/chat:", body);
+
     if (!unit || !topic || !activity || !userMessage) {
       return Response.json(
         { error: "Missing unit, topic, activity, or user message." },

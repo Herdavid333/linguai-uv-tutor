@@ -65,6 +65,8 @@ ${context}
     return JSON.parse(response.text);
   } catch (error) {
     console.error("Error generating tutor response:", error);
+    console.error("Error message:", error.message);
+
     return fallbackResponse;
   }
 }

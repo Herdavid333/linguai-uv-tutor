@@ -21,7 +21,6 @@ import {
   MESSAGE_ROLES,
 } from "../../utils/chatModel";
 
-import { buildChatPayload } from "../../utils/buildChatPayload";
 import ChatSideMenu from "../../components/chat/ChatSideMenu";
 import { learningUnits } from "../../data/learningContent";
 import LearningSummaryPanel from "../../components/chat/LearningSummaryPanel";
@@ -29,6 +28,7 @@ import { useAuth } from "../../context/AuthContext";
 import {
   createPracticeHistoryItem,
   savePracticeHistory,
+  updatePracticeHistoryWithAI,
 } from "../../services/practiceHistoryService";
 
 export default function ChatPage() {
@@ -43,6 +43,7 @@ export default function ChatPage() {
   const [showSideMenu, setShowSideMenu] = useState(false);
   const messagesEndRef = useRef(null);
   const [showLearningSummary, setShowLearningSummary] = useState(false);
+  const [practiceHistoryId, setPracticeHistoryId] = useState(null);
 
   /* =========================================================
      CARGA INICIAL DE LA CONVERSACIÓN
@@ -90,11 +91,13 @@ export default function ChatPage() {
   const handleSendMessage = async (e) => {
     e.preventDefault();
 
-    if (!inputMessage.trim() || !conversation || isAssistantTyping) return;
+    const trimmedMessage = inputMessage.trim();
+
+    if (!trimmedMessage || !conversation || isAssistantTyping) return;
 
     const userMessage = createMessage({
       role: MESSAGE_ROLES.USER,
-      content: inputMessage.trim(),
+      content: trimmedMessage,
     });
 
     const updatedConversation = addMessageToConversation(
@@ -104,11 +107,47 @@ export default function ChatPage() {
 
     setConversation(updatedConversation);
     saveConversation(updatedConversation);
+
+
     setInputMessage("");
     setIsAssistantTyping(true);
 
     try {
-      const payload = buildChatPayload(updatedConversation, userMessage);
+      const { context } = updatedConversation;
+
+      const payload = {
+        unit: {
+          id: context.unitId,
+          title: context.unitTitle,
+        },
+
+        topic: {
+          id: context.topicId,
+          title: context.topicTitle,
+        },
+
+        activity: {
+          type: context.activityType || "conversation",
+          name: context.activityName,
+        },
+
+        difficulty: "Beginner",
+
+        // Se excluye el último mensaje porque ya se envía como userMessage.
+        recentMessages: updatedConversation.messages
+          .slice(0, -1)
+          .map((message) => ({
+            role:
+              message.role === MESSAGE_ROLES.ASSISTANT
+                ? "assistant"
+                : "user",
+            content: message.content,
+          })),
+
+        userMessage: trimmedMessage,
+      };
+
+      console.log("Payload enviado a Gemini:", payload);
 
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -120,13 +159,19 @@ export default function ChatPage() {
 
       const data = await response.json();
 
+      console.log("Respuesta pedagógica de Gemini:", data);
+
       if (!response.ok) {
         throw new Error(data.error || "Chat request failed.");
       }
 
+      if (!data.assistantReply) {
+        throw new Error("Gemini did not return assistantReply.");
+      }
+
       const assistantMessage = createMessage({
         role: MESSAGE_ROLES.ASSISTANT,
-        content: data.content,
+        content: data.assistantReply,
       });
 
       const conversationWithAssistant = addMessageToConversation(
@@ -136,6 +181,38 @@ export default function ChatPage() {
 
       setConversation(conversationWithAssistant);
       saveConversation(conversationWithAssistant);
+
+      let currentPracticeHistoryId = practiceHistoryId;
+
+      if (!currentPracticeHistoryId) {
+        currentPracticeHistoryId = await registerPracticeHistory(
+          updatedConversation.context
+        );
+      }
+
+      if (currentPracticeHistoryId) {
+        try {
+          await updatePracticeHistoryWithAI({
+            practiceHistoryId: currentPracticeHistoryId,
+            aiResponse: data,
+          });
+        } catch (persistenceError) {
+          console.error(
+            "The tutor replied, but the practice history could not be updated:",
+            persistenceError
+          );
+        }
+      }
+
+      // Por ahora verificamos los datos pedagógicos en consola.
+      // Después se guardarán en Firestore y alimentarán Learning Summary.
+      console.log("Corrections:", data.corrections);
+      console.log("New words:", data.newWords);
+      console.log("Grammar structures:", data.grammarStructures);
+      console.log("Feedback:", data.feedback);
+      console.log("Score:", data.score);
+      console.log("Activity completed:", data.activityCompleted);
+      console.log("Next suggestion:", data.nextSuggestion);
     } catch (error) {
       console.error("Error sending message to backend:", error);
 
@@ -158,11 +235,27 @@ export default function ChatPage() {
   };
 
   const registerPracticeHistory = async (context) => {
-    if (!user?.uid || !context) return;
+    if (!user?.uid || !context) return null;
 
-    const historyKey = `practice_registered_${user.uid}_${context.unitId}_${context.topicId}_${context.activityType}_${context.activityName}`;
+    const historyKey =
+      `practice_registered_${user.uid}_` +
+      `${context.unitId}_${context.topicId}_` +
+      `${context.activityType}_${context.activityName}`;
 
-    if (sessionStorage.getItem(historyKey)) return;
+    const savedHistoryId = sessionStorage.getItem(historyKey);
+
+    if (
+      savedHistoryId &&
+      savedHistoryId !== "true" &&
+      savedHistoryId !== "false"
+    ) {
+      setPracticeHistoryId(savedHistoryId);
+      return savedHistoryId;
+    }
+
+    if (savedHistoryId === "true" || savedHistoryId === "false") {
+      sessionStorage.removeItem(historyKey);
+    }
 
     try {
       const historyItem = createPracticeHistoryItem({
@@ -180,11 +273,15 @@ export default function ChatPage() {
         status: "started",
       });
 
-      await savePracticeHistory(historyItem);
+      const createdHistoryId = await savePracticeHistory(historyItem);
 
-      sessionStorage.setItem(historyKey, "true");
+      setPracticeHistoryId(createdHistoryId);
+      sessionStorage.setItem(historyKey, createdHistoryId);
+
+      return createdHistoryId;
     } catch (error) {
       console.error("Error registering practice history:", error);
+      return null;
     }
   };
 
