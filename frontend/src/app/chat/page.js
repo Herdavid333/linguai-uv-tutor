@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Bot,
@@ -27,6 +27,7 @@ import LearningSummaryPanel from "../../components/chat/LearningSummaryPanel";
 import { useAuth } from "../../context/AuthContext";
 import {
   createPracticeHistoryItem,
+  getPracticeHistoryById,
   savePracticeHistory,
   updatePracticeHistoryWithAI,
 } from "../../services/practiceHistoryService";
@@ -45,27 +46,52 @@ export default function ChatPage() {
   const [showLearningSummary, setShowLearningSummary] = useState(false);
   const [practiceHistoryId, setPracticeHistoryId] = useState(null);
 
+  const [learningSummary, setLearningSummary] = useState({
+    corrections: [],
+    newWords: [],
+    grammarStructures: [],
+  });
+
+
   /* =========================================================
      CARGA INICIAL DE LA CONVERSACIÓN
   ========================================================= */
   useEffect(() => {
-    const saved = getConversation();
+    const loadSavedConversation = async () => {
+      const saved = getConversation();
 
-    if (saved) {
+      if (!saved) return;
+
+      let conversationToLoad = saved;
+
       if (saved.messages.length === 0) {
         const firstBotMessage = createMessage({
           role: MESSAGE_ROLES.ASSISTANT,
           content: `Hello! Let’s practice ${saved.context.topicTitle} through ${saved.context.activityName}.`,
         });
 
-        const updated = addMessageToConversation(saved, firstBotMessage);
+        conversationToLoad = addMessageToConversation(
+          saved,
+          firstBotMessage
+        );
 
-        setConversation(updated);
-        saveConversation(updated);
-      } else {
-        setConversation(saved);
+        saveConversation(conversationToLoad);
       }
-    }
+
+      setConversation(conversationToLoad);
+
+      if (conversationToLoad.practiceHistoryId) {
+        setPracticeHistoryId(
+          conversationToLoad.practiceHistoryId
+        );
+
+        await loadLearningSummary(
+          conversationToLoad.practiceHistoryId
+        );
+      }
+    };
+
+    loadSavedConversation();
   }, []);
 
   /* =========================================================
@@ -84,6 +110,48 @@ export default function ChatPage() {
 
     registerPracticeHistory(conversation.context);
   }, [conversation?.context, user?.uid]);
+
+  const loadLearningSummary = useCallback(
+    async (historyId) => {
+      if (!historyId) return;
+
+      try {
+        const practiceData =
+          await getPracticeHistoryById(historyId);
+
+        if (!practiceData) return;
+
+        setLearningSummary({
+          corrections: mergeCorrections(
+            [],
+            Array.isArray(practiceData.corrections)
+              ? practiceData.corrections
+              : []
+          ),
+
+          newWords: mergeNewWords(
+            [],
+            Array.isArray(practiceData.newWords)
+              ? practiceData.newWords
+              : []
+          ),
+
+          grammarStructures: mergeGrammarStructures(
+            [],
+            Array.isArray(practiceData.grammarStructures)
+              ? practiceData.grammarStructures
+              : []
+          ),
+        });
+      } catch (error) {
+        console.error(
+          "Error loading learning summary:",
+          error
+        );
+      }
+    },
+    []
+  );
   
   /* =========================================================
      ENVÍO DE MENSAJES AL CHAT
@@ -159,6 +227,16 @@ export default function ChatPage() {
 
       const data = await response.json();
 
+      if (!response.ok) {
+        console.error("Backend response error:", data);
+
+        throw new Error(
+          data.details ||
+            data.error ||
+            "Chat request failed."
+        );
+      }
+
       console.log("Respuesta pedagógica de Gemini:", data);
 
       if (!response.ok) {
@@ -168,6 +246,25 @@ export default function ChatPage() {
       if (!data.assistantReply) {
         throw new Error("Gemini did not return assistantReply.");
       }
+
+      setLearningSummary((previousSummary) => ({
+        corrections: mergeCorrections(
+          previousSummary.corrections,
+          Array.isArray(data.corrections) ? data.corrections : []
+        ),
+
+        newWords: mergeNewWords(
+          previousSummary.newWords,
+          Array.isArray(data.newWords) ? data.newWords : []
+        ),
+
+        grammarStructures: mergeGrammarStructures(
+          previousSummary.grammarStructures,
+          Array.isArray(data.grammarStructures)
+            ? data.grammarStructures
+            : []
+        ),
+      }));
 
       const assistantMessage = createMessage({
         role: MESSAGE_ROLES.ASSISTANT,
@@ -242,6 +339,20 @@ export default function ChatPage() {
       `${context.unitId}_${context.topicId}_` +
       `${context.activityType}_${context.activityName}`;
 
+    const conversationPracticeId =
+      conversation?.practiceHistoryId || null;
+
+    if (conversationPracticeId) {
+      setPracticeHistoryId(conversationPracticeId);
+
+      sessionStorage.setItem(
+        historyKey,
+        conversationPracticeId
+      );
+
+      return conversationPracticeId;
+    }
+
     const savedHistoryId = sessionStorage.getItem(historyKey);
 
     if (
@@ -250,6 +361,21 @@ export default function ChatPage() {
       savedHistoryId !== "false"
     ) {
       setPracticeHistoryId(savedHistoryId);
+
+      setConversation((previousConversation) => {
+        if (!previousConversation) return previousConversation;
+
+        const updatedConversation = {
+          ...previousConversation,
+          practiceHistoryId: savedHistoryId,
+          updatedAt: Date.now(),
+        };
+
+        saveConversation(updatedConversation);
+
+        return updatedConversation;
+      });
+
       return savedHistoryId;
     }
 
@@ -273,14 +399,34 @@ export default function ChatPage() {
         status: "started",
       });
 
-      const createdHistoryId = await savePracticeHistory(historyItem);
+      const createdHistoryId = await savePracticeHistory(
+        historyItem
+      );
 
       setPracticeHistoryId(createdHistoryId);
       sessionStorage.setItem(historyKey, createdHistoryId);
 
+      setConversation((previousConversation) => {
+        if (!previousConversation) return previousConversation;
+
+        const updatedConversation = {
+          ...previousConversation,
+          practiceHistoryId: createdHistoryId,
+          updatedAt: Date.now(),
+        };
+
+        saveConversation(updatedConversation);
+
+        return updatedConversation;
+      });
+
       return createdHistoryId;
     } catch (error) {
-      console.error("Error registering practice history:", error);
+      console.error(
+        "Error registering practice history:",
+        error
+      );
+
       return null;
     }
   };
@@ -451,6 +597,9 @@ export default function ChatPage() {
         <LearningSummaryPanel
           isOpen={showLearningSummary}
           onClose={() => setShowLearningSummary(false)}
+          corrections={learningSummary.corrections}
+          newWords={learningSummary.newWords}
+          grammarStructures={learningSummary.grammarStructures}
         />
 
         {/* =========================================================
@@ -541,4 +690,172 @@ export default function ChatPage() {
       </section>
     </main>
   );
+}
+
+function normalizeText(value = "") {
+  return value
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[.,!?;:'"`´]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function normalizeCorrectionType(type = "") {
+  const normalizedType = normalizeText(type);
+
+  const supportedTypes = [
+    "grammar",
+    "vocabulary",
+    "spelling",
+    "coherence",
+  ];
+
+  return supportedTypes.includes(normalizedType)
+    ? normalizedType
+    : "grammar";
+}
+
+function buildCorrectionKey(correction) {
+  const wrong = normalizeText(correction?.wrong);
+  const correct = normalizeText(correction?.correct);
+  const type = normalizeCorrectionType(correction?.type);
+
+  return `${type}|${wrong}|${correct}`;
+}
+
+function mergeCorrections(currentCorrections, incomingCorrections) {
+  const correctionsMap = new Map();
+
+  currentCorrections.forEach((correction) => {
+    if (!correction?.wrong || !correction?.correct) return;
+
+    const key = buildCorrectionKey(correction);
+
+    correctionsMap.set(key, {
+      wrong: correction.wrong.trim(),
+      correct: correction.correct.trim(),
+      explanation: correction.explanation || "",
+      type: normalizeCorrectionType(correction.type),
+      occurrences:
+        typeof correction.occurrences === "number"
+          ? correction.occurrences
+          : 1,
+    });
+  });
+
+  incomingCorrections.forEach((correction) => {
+    if (!correction?.wrong || !correction?.correct) return;
+
+    const key = buildCorrectionKey(correction);
+    const existingCorrection = correctionsMap.get(key);
+
+    if (existingCorrection) {
+      correctionsMap.set(key, {
+        ...existingCorrection,
+
+        // Conserva la explicación más completa.
+        explanation:
+          (correction.explanation || "").length >
+          (existingCorrection.explanation || "").length
+            ? correction.explanation
+            : existingCorrection.explanation,
+
+        occurrences: existingCorrection.occurrences + 1,
+      });
+
+      return;
+    }
+
+    correctionsMap.set(key, {
+      wrong: correction.wrong.trim(),
+      correct: correction.correct.trim(),
+      explanation: correction.explanation || "",
+      type: normalizeCorrectionType(correction.type),
+      occurrences: 1,
+    });
+  });
+
+  return Array.from(correctionsMap.values());
+}
+
+function mergeNewWords(currentWords, incomingWords) {
+  const wordsMap = new Map();
+
+  currentWords.forEach((item) => {
+    if (!item?.word) return;
+
+    const key = normalizeText(item.word);
+
+    wordsMap.set(key, {
+      word: item.word.trim(),
+      meaning: item.meaning || item.definition || "",
+      example: item.example || "",
+      occurrences:
+        typeof item.occurrences === "number"
+          ? item.occurrences
+          : 1,
+    });
+  });
+
+  incomingWords.forEach((item) => {
+    if (!item?.word) return;
+
+    const key = normalizeText(item.word);
+    const existingWord = wordsMap.get(key);
+
+    if (existingWord) {
+      wordsMap.set(key, {
+        ...existingWord,
+
+        meaning:
+          existingWord.meaning ||
+          item.meaning ||
+          item.definition ||
+          "",
+
+        example:
+          existingWord.example ||
+          item.example ||
+          "",
+
+        occurrences: existingWord.occurrences + 1,
+      });
+
+      return;
+    }
+
+    wordsMap.set(key, {
+      word: item.word.trim(),
+      meaning: item.meaning || item.definition || "",
+      example: item.example || "",
+      occurrences: 1,
+    });
+  });
+
+  return Array.from(wordsMap.values());
+}
+
+function mergeGrammarStructures(
+  currentStructures,
+  incomingStructures
+) {
+  const structuresMap = new Map();
+
+  [...currentStructures, ...incomingStructures].forEach(
+    (structure) => {
+      if (!structure || typeof structure !== "string") return;
+
+      const normalizedStructure = normalizeText(structure);
+
+      if (!structuresMap.has(normalizedStructure)) {
+        structuresMap.set(
+          normalizedStructure,
+          structure.trim()
+        );
+      }
+    }
+  );
+
+  return Array.from(structuresMap.values());
 }

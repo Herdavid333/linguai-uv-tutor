@@ -2,133 +2,115 @@
 
 import { X } from "lucide-react";
 
-export default function LearningSummaryPanel({ isOpen, onClose }) {
+export default function LearningSummaryPanel({
+  isOpen,
+  onClose,
+  corrections = [],
+  newWords = [],
+  grammarStructures = [],
+}) {
   if (!isOpen) return null;
-
-  const corrections = [
-    {
-      wrong: "i am from Colombia",
-      correct: "I am from Colombia",
-      explanation: "Sentences must start with a capital letter.",
-    },
-    {
-      wrong: "my name is hernan",
-      correct: "My name is Hernan",
-      explanation: "Names must start with capital letters.",
-    },
-  ];
-
-  const newWords = [
-    {
-        word: "introduce",
-        definition: "present yourself",
-    },
-    {
-        word: "greet",
-        definition: "say hello",
-    },
-    {
-        word: "country",
-        definition: "nation",
-    },
-    {
-        word: "from",
-        definition: "used to indicate origin",
-    },
-    ];
-
-  const grammarStructures = [
-    "I am from + country",
-    "My name is + name",
-    "I am + adjective",
-    "This is + noun",
-  ];
 
   return (
     <div className="absolute inset-0 z-30 bg-black/20 backdrop-blur-[2px]">
-      <div className="absolute left-3 right-3 bottom-[115px] rounded-[12px] bg-[#9d9d9d] p-3 pt-8 shadow-lg">
+      <div className="absolute bottom-[115px] left-3 right-3 rounded-[12px] bg-[#9d9d9d] p-3 pt-8 shadow-lg">
         <button
-            onClick={onClose}
-            className="
-                absolute right-3 top-0.5
-                rounded-full
-                p-1
-                text-red-600
-                transition duration-100
-                active:scale-90
-                active:translate-y-[1px]
-                hover:text-red-700
-            "
+          type="button"
+          onClick={onClose}
+          aria-label="Close learning summary"
+          className="absolute right-3 top-0.5 rounded-full p-1 text-red-600 transition duration-100 hover:text-red-700 active:translate-y-[1px] active:scale-90"
         >
-            <X size={22} strokeWidth={3} />
+          <X size={22} strokeWidth={3} />
         </button>
 
         <SummarySection title="Corrections">
-          {corrections.map((item, index) => (
-            <div key={index}>
-                <div className="text-[15px] font-semibold text-black leading-relaxed">
-                <p>
+          {corrections.length > 0 ? (
+            corrections.map((item, index) => (
+              <div key={`${item.wrong}-${item.correct}-${index}`}>
+                <div className="text-[15px] font-semibold leading-relaxed text-black">
+                  <p>
                     <span className="font-extrabold text-red-600">✕</span>{" "}
                     {item.wrong}
-                </p>
+                  </p>
 
-                <p>
+                  <p>
                     <span className="font-extrabold">✓</span>{" "}
                     {item.correct}
-                </p>
+                  </p>
 
-                <p className="mt-1">
-                    <span className="font-extrabold">
-                    Explanation:
-                    </span>{" "}
+                  <p className="mt-1">
+                    <span className="font-extrabold">Explanation:</span>{" "}
                     {item.explanation}
-                </p>
+                  </p>
                 </div>
 
+               {item.occurrences > 1 && (
+                  <p className="mt-1 text-[13px] font-bold text-gray-700">
+                    Repeated {item.occurrences} times
+                  </p>
+                )} 
+
                 {index < corrections.length - 1 && (
-                <div className="my-3 border-b border-gray-500" />
+                  <div className="my-3 border-b border-gray-500" />
                 )}
-            </div>
-            ))}
+              </div>
+            ))
+          ) : (
+            <EmptyMessage text="No corrections yet." />
+          )}
         </SummarySection>
 
         <SummarySection title="New Words">
-          <ul className="space-y-2">
-            {newWords.map((item, index) => (
+          {newWords.length > 0 ? (
+            <ul className="space-y-3">
+              {newWords.map((item, index) => (
                 <li
-                key={index}
-                className="flex items-start gap-2 text-[15px] text-black"
+                  key={`${item.word}-${index}`}
+                  className="flex items-start gap-2 text-[15px] text-black"
                 >
-                <span className="mt-[2px] text-red-600 font-extrabold">
+                  <span className="mt-[2px] font-extrabold text-red-600">
                     •
-                </span>
+                  </span>
 
-                <span>
-                    <span className="font-extrabold">
-                    {item.word}:
-                    </span>{" "}
-                    {item.definition}
-                </span>
+                  <div>
+                    <p>
+                      <span className="font-extrabold">{item.word}:</span>{" "}
+                      {item.meaning || item.definition}
+                    </p>
+
+                    {item.example && (
+                      <p className="mt-1 text-[14px] italic">
+                        Example: {item.example}
+                      </p>
+                    )}
+                  </div>
                 </li>
-            ))}
+              ))}
             </ul>
+          ) : (
+            <EmptyMessage text="No new words yet." />
+          )}
         </SummarySection>
 
         <SummarySection title="Grammar Structures">
-          <ul className="space-y-2">
-            {grammarStructures.map((structure, index) => (
+          {grammarStructures.length > 0 ? (
+            <ul className="space-y-2">
+              {grammarStructures.map((structure, index) => (
                 <li
-                key={index}
-                className="flex items-start gap-2 text-[15px] font-semibold text-black"
+                  key={`${structure}-${index}`}
+                  className="flex items-start gap-2 text-[15px] font-semibold text-black"
                 >
-                <span className="mt-[2px] text-red-600 font-extrabold">
+                  <span className="mt-[2px] font-extrabold text-red-600">
                     •
-                </span>
+                  </span>
 
-                <span>{structure}</span>
+                  <span>{structure}</span>
                 </li>
-            ))}
+              ))}
             </ul>
+          ) : (
+            <EmptyMessage text="No grammar structures yet." />
+          )}
         </SummarySection>
 
         <div className="absolute -bottom-3 left-12 h-0 w-0 border-l-[9px] border-r-[9px] border-t-[12px] border-l-transparent border-r-transparent border-t-[#9d9d9d]" />
@@ -145,12 +127,20 @@ function SummarySection({
   return (
     <section className="mb-3 rounded-md bg-[#d9d9d9] p-4 shadow-inner last:mb-0">
       <h3 className="mb-2 text-[18px] font-extrabold text-red-600">
-        {title} 
+        {title}
       </h3>
 
       <div className={`${height} overflow-y-auto pr-2`}>
         {children}
       </div>
     </section>
+  );
+}
+
+function EmptyMessage({ text }) {
+  return (
+    <p className="text-[14px] font-semibold italic text-gray-600">
+      {text}
+    </p>
   );
 }

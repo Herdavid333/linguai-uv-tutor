@@ -9,6 +9,7 @@ export const MESSAGE_ROLES = {
 export const createNewConversation = (context) => {
   return {
     id: crypto.randomUUID(),
+
     context: {
       unitId: context.unitId,
       unitTitle: context.unitTitle,
@@ -16,9 +17,22 @@ export const createNewConversation = (context) => {
       topicTitle: context.topicTitle,
       activityType: context.activityType,
       activityName: context.activityName,
-      activityDescription: context.activityDescription || "",
+      activityDescription:
+        context.activityDescription || "",
     },
+
+    // NUEVO
+    practiceHistoryId: null,
+
+    // NUEVO
+    learningSummary: {
+      corrections: [],
+      newWords: [],
+      grammarStructures: [],
+    },
+
     messages: [],
+
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };

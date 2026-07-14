@@ -13,7 +13,7 @@ export async function POST(request) {
       userMessage,
     } = body;
 
-    console.log("BODY /api/chat:", body);
+  console.log("BODY /api/chat:", body);
 
     if (!unit || !topic || !activity || !userMessage) {
       return Response.json(
@@ -36,8 +36,13 @@ export async function POST(request) {
     console.error("Chat API error:", error);
 
     return Response.json(
-      { error: "Internal server error." },
-      { status: 500 }
+      {
+        error: "Gemini request failed.",
+        details: error?.message || "Unknown Gemini error.",
+        status: error?.status || null,
+        code: error?.code || null,
+      },
+      { status: error?.status || 500 }
     );
   }
 }

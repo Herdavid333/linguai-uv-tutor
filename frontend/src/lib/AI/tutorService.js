@@ -1,10 +1,125 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { buildTutorSystemPrompt } from "./prompts/tutorPrompt";
 import { buildContext } from "./builders/buildContext";
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
+
+const tutorResponseSchema = {
+  type: Type.OBJECT,
+  properties: {
+    assistantReply: {
+      type: Type.STRING,
+    },
+
+    feedback: {
+      type: Type.OBJECT,
+      properties: {
+        overall: {
+          type: Type.STRING,
+        },
+        strengths: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.STRING,
+          },
+        },
+        improvements: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.STRING,
+          },
+        },
+      },
+      required: ["overall", "strengths", "improvements"],
+    },
+
+    corrections: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          wrong: {
+            type: Type.STRING,
+          },
+          correct: {
+            type: Type.STRING,
+          },
+          explanation: {
+            type: Type.STRING,
+          },
+          type: {
+            type: Type.STRING,
+            enum: [
+              "grammar",
+              "vocabulary",
+              "spelling",
+              "coherence",
+            ],
+          },
+        },
+        required: [
+          "wrong",
+          "correct",
+          "explanation",
+          "type",
+        ],
+      },
+    },
+
+    newWords: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          word: {
+            type: Type.STRING,
+          },
+          meaning: {
+            type: Type.STRING,
+          },
+          example: {
+            type: Type.STRING,
+          },
+        },
+        required: ["word", "meaning", "example"],
+      },
+    },
+
+    grammarStructures: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.STRING,
+      },
+    },
+
+    score: {
+      type: Type.INTEGER,
+      minimum: 0,
+      maximum: 100,
+    },
+
+    activityCompleted: {
+      type: Type.BOOLEAN,
+    },
+
+    nextSuggestion: {
+      type: Type.STRING,
+    },
+  },
+
+  required: [
+    "assistantReply",
+    "feedback",
+    "corrections",
+    "newWords",
+    "grammarStructures",
+    "score",
+    "activityCompleted",
+    "nextSuggestion",
+  ],
+};
 
 const fallbackResponse = {
   assistantReply:
@@ -42,7 +157,18 @@ export async function generateTutorResponse({
     });
 
     const conversationHistory = recentMessages
-      .map((message) => `${message.role}: ${message.content}`)
+      .filter(
+        (message) =>
+          message &&
+          typeof message.content === "string" &&
+          message.content.trim()
+      )
+      .map(
+        (message) =>
+          `${message.role === "assistant" ? "Tutor" : "Student"}: ${
+            message.content
+          }`
+      )
       .join("\n");
 
     const prompt = `
@@ -50,6 +176,8 @@ Recent conversation:
 ${conversationHistory || "No previous messages."}
 
 ${context}
+
+Respond according to the required structured format.
 `;
 
     const response = await ai.models.generateContent({
@@ -57,16 +185,33 @@ ${context}
       contents: prompt,
       config: {
         systemInstruction,
-        temperature: 0.4,
+        temperature: 0.3,
         responseMimeType: "application/json",
+        responseSchema: tutorResponseSchema,
       },
     });
 
-    return JSON.parse(response.text);
+    if (!response.text) {
+      throw new Error("Gemini returned an empty response.");
+    }
+
+    const parsedResponse = JSON.parse(response.text);
+
+    if (!parsedResponse.assistantReply) {
+      throw new Error(
+        "Gemini response does not contain assistantReply."
+      );
+    }
+
+    return parsedResponse;
   } catch (error) {
     console.error("Error generating tutor response:", error);
-    console.error("Error message:", error.message);
+    console.error("Error name:", error?.name);
+    console.error("Error message:", error?.message);
+    console.error("Status:", error?.status);
+    console.error("Code:", error?.code);
+    console.error("Full error:", error);
 
-    return fallbackResponse;
+    return error;
   }
 }

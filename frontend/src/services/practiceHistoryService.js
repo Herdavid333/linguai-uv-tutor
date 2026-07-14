@@ -4,6 +4,7 @@ import {
   collection,
   doc,
   getDocs,
+  getDoc,
   increment,
   orderBy,
   query,
@@ -188,6 +189,31 @@ export const updatePracticeHistoryWithAI = async ({
 
   await updateDoc(practiceRef, updateData);
 };
+
+/* =========================================================
+   CONSULTAR UNA PRÁCTICA POR SU ID
+========================================================= */
+export const getPracticeHistoryById = async (practiceHistoryId) => {
+  if (!practiceHistoryId) return null;
+
+  const practiceRef = doc(
+    db,
+    "practiceHistory",
+    practiceHistoryId
+  );
+
+  const practiceSnapshot = await getDoc(practiceRef);
+
+  if (!practiceSnapshot.exists()) {
+    return null;
+  }
+
+  return {
+    id: practiceSnapshot.id,
+    ...practiceSnapshot.data(),
+  };
+};
+
 
 /* =========================================================
    CONSULTAR HISTORIAL POR USUARIO
