@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Bot,
@@ -18,6 +18,7 @@ import {
   saveConversation,
   createMessage,
   addMessageToConversation,
+  createEmptyLearningSummary,
   MESSAGE_ROLES,
 } from "../../utils/chatModel";
 
@@ -38,57 +39,98 @@ export default function ChatPage() {
   ========================================================= */
   const router = useRouter();
   const { user } = useAuth();
+
   const [conversation, setConversation] = useState(null);
   const [inputMessage, setInputMessage] = useState("");
   const [isAssistantTyping, setIsAssistantTyping] = useState(false);
   const [showSideMenu, setShowSideMenu] = useState(false);
-  const messagesEndRef = useRef(null);
   const [showLearningSummary, setShowLearningSummary] = useState(false);
-  const [practiceHistoryId, setPracticeHistoryId] = useState(null);
 
-  const [learningSummary, setLearningSummary] = useState({
-    corrections: [],
-    newWords: [],
-    grammarStructures: [],
-  });
+  const messagesEndRef = useRef(null);
+  const practiceCreationRef = useRef(null);
 
+  const learningSummary =
+    conversation?.learningSummary ||
+    createEmptyLearningSummary();
 
   /* =========================================================
      CARGA INICIAL DE LA CONVERSACIÓN
   ========================================================= */
   useEffect(() => {
     const loadSavedConversation = async () => {
-      const saved = getConversation();
+      const savedConversation = getConversation();
 
-      if (!saved) return;
+      if (!savedConversation) return;
 
-      let conversationToLoad = saved;
+      let conversationToLoad = savedConversation;
 
-      if (saved.messages.length === 0) {
+      if (savedConversation.messages.length === 0) {
         const firstBotMessage = createMessage({
           role: MESSAGE_ROLES.ASSISTANT,
-          content: `Hello! Let’s practice ${saved.context.topicTitle} through ${saved.context.activityName}.`,
+          content: `Hello! Let’s practice ${savedConversation.context.topicTitle} through ${savedConversation.context.activityName}.`,
         });
 
         conversationToLoad = addMessageToConversation(
-          saved,
+          savedConversation,
           firstBotMessage
         );
+      }
 
-        saveConversation(conversationToLoad);
+      /*
+        Firestore será la fuente persistente del resumen.
+        Si existe una práctica asociada, se recupera y se
+        combina con la conversación local.
+      */
+      if (conversationToLoad.practiceHistoryId) {
+        try {
+          const practiceData =
+            await getPracticeHistoryById(
+              conversationToLoad.practiceHistoryId
+            );
+
+          if (practiceData) {
+            conversationToLoad = {
+              ...conversationToLoad,
+
+              learningSummary: {
+                corrections: mergeCorrections(
+                  [],
+                  Array.isArray(practiceData.corrections)
+                    ? practiceData.corrections
+                    : []
+                ),
+
+                newWords: mergeNewWords(
+                  [],
+                  Array.isArray(practiceData.newWords)
+                    ? practiceData.newWords
+                    : []
+                ),
+
+                grammarStructures:
+                  mergeGrammarStructures(
+                    [],
+                    Array.isArray(
+                      practiceData.grammarStructures
+                    )
+                      ? practiceData.grammarStructures
+                      : []
+                  ),
+              },
+
+              updatedAt: Date.now(),
+            };
+          }
+        } catch (error) {
+          console.error(
+            "Error loading learning summary from Firestore:",
+            error
+          );
+        }
       }
 
       setConversation(conversationToLoad);
-
-      if (conversationToLoad.practiceHistoryId) {
-        setPracticeHistoryId(
-          conversationToLoad.practiceHistoryId
-        );
-
-        await loadLearningSummary(
-          conversationToLoad.practiceHistoryId
-        );
-      }
+      saveConversation(conversationToLoad);
     };
 
     loadSavedConversation();
@@ -106,53 +148,24 @@ export default function ChatPage() {
 
 
   useEffect(() => {
-    if (!conversation?.context || !user?.uid) return;
+    if (
+      !conversation?.context ||
+      !user?.uid ||
+      conversation.practiceHistoryId
+    ) {
+      return;
+    }
 
-    registerPracticeHistory(conversation.context);
-  }, [conversation?.context, user?.uid]);
+    registerPracticeHistory(
+      conversation.context,
+      conversation
+    );
+  }, [
+    conversation?.context,
+    conversation?.practiceHistoryId,
+    user?.uid,
+  ]);
 
-  const loadLearningSummary = useCallback(
-    async (historyId) => {
-      if (!historyId) return;
-
-      try {
-        const practiceData =
-          await getPracticeHistoryById(historyId);
-
-        if (!practiceData) return;
-
-        setLearningSummary({
-          corrections: mergeCorrections(
-            [],
-            Array.isArray(practiceData.corrections)
-              ? practiceData.corrections
-              : []
-          ),
-
-          newWords: mergeNewWords(
-            [],
-            Array.isArray(practiceData.newWords)
-              ? practiceData.newWords
-              : []
-          ),
-
-          grammarStructures: mergeGrammarStructures(
-            [],
-            Array.isArray(practiceData.grammarStructures)
-              ? practiceData.grammarStructures
-              : []
-          ),
-        });
-      } catch (error) {
-        console.error(
-          "Error loading learning summary:",
-          error
-        );
-      }
-    },
-    []
-  );
-  
   /* =========================================================
      ENVÍO DE MENSAJES AL CHAT
   ========================================================= */
@@ -161,7 +174,9 @@ export default function ChatPage() {
 
     const trimmedMessage = inputMessage.trim();
 
-    if (!trimmedMessage || !conversation || isAssistantTyping) return;
+    if (!trimmedMessage || !conversation || isAssistantTyping) {
+      return;
+    }
 
     const userMessage = createMessage({
       role: MESSAGE_ROLES.USER,
@@ -175,7 +190,6 @@ export default function ChatPage() {
 
     setConversation(updatedConversation);
     saveConversation(updatedConversation);
-
 
     setInputMessage("");
     setIsAssistantTyping(true);
@@ -201,9 +215,15 @@ export default function ChatPage() {
 
         difficulty: "Beginner",
 
-        // Se excluye el último mensaje porque ya se envía como userMessage.
+        // El último mensaje se envía por separado como userMessage.
         recentMessages: updatedConversation.messages
           .slice(0, -1)
+          .filter(
+            (message) =>
+              message &&
+              typeof message.content === "string" &&
+              message.content.trim()
+          )
           .map((message) => ({
             role:
               message.role === MESSAGE_ROLES.ASSISTANT
@@ -226,6 +246,8 @@ export default function ChatPage() {
       });
 
       const data = await response.json();
+      console.log("STATUS:", response.status);
+      console.log("DATA:", data);
 
       if (!response.ok) {
         console.error("Backend response error:", data);
@@ -239,58 +261,80 @@ export default function ChatPage() {
 
       console.log("Respuesta pedagógica de Gemini:", data);
 
-      if (!response.ok) {
-        throw new Error(data.error || "Chat request failed.");
-      }
-
       if (!data.assistantReply) {
-        throw new Error("Gemini did not return assistantReply.");
+        throw new Error(
+          "Gemini did not return assistantReply."
+        );
       }
 
-      setLearningSummary((previousSummary) => ({
+      const currentSummary =
+        updatedConversation.learningSummary ||
+        createEmptyLearningSummary();
+
+      const updatedLearningSummary = {
         corrections: mergeCorrections(
-          previousSummary.corrections,
-          Array.isArray(data.corrections) ? data.corrections : []
+          currentSummary.corrections,
+          Array.isArray(data.corrections)
+            ? data.corrections
+            : []
         ),
 
         newWords: mergeNewWords(
-          previousSummary.newWords,
-          Array.isArray(data.newWords) ? data.newWords : []
+          currentSummary.newWords,
+          Array.isArray(data.newWords)
+            ? data.newWords
+            : []
         ),
 
         grammarStructures: mergeGrammarStructures(
-          previousSummary.grammarStructures,
+          currentSummary.grammarStructures,
           Array.isArray(data.grammarStructures)
             ? data.grammarStructures
             : []
         ),
-      }));
+      };
+
+      let activePracticeHistoryId =
+        updatedConversation.practiceHistoryId || null;
+
+      if (!activePracticeHistoryId) {
+        activePracticeHistoryId =
+          await registerPracticeHistory(
+            updatedConversation.context,
+            updatedConversation
+          );
+      }
 
       const assistantMessage = createMessage({
         role: MESSAGE_ROLES.ASSISTANT,
         content: data.assistantReply,
       });
 
-      const conversationWithAssistant = addMessageToConversation(
-        updatedConversation,
-        assistantMessage
-      );
+      const conversationWithSummary = {
+        ...updatedConversation,
+
+        practiceHistoryId:
+          activePracticeHistoryId || null,
+
+        learningSummary: updatedLearningSummary,
+
+        updatedAt: Date.now(),
+      };
+
+      const conversationWithAssistant =
+        addMessageToConversation(
+          conversationWithSummary,
+          assistantMessage
+        );
 
       setConversation(conversationWithAssistant);
       saveConversation(conversationWithAssistant);
 
-      let currentPracticeHistoryId = practiceHistoryId;
-
-      if (!currentPracticeHistoryId) {
-        currentPracticeHistoryId = await registerPracticeHistory(
-          updatedConversation.context
-        );
-      }
-
-      if (currentPracticeHistoryId) {
+      if (activePracticeHistoryId) {
         try {
           await updatePracticeHistoryWithAI({
-            practiceHistoryId: currentPracticeHistoryId,
+            practiceHistoryId:
+              activePracticeHistoryId,
             aiResponse: data,
           });
         } catch (persistenceError) {
@@ -301,17 +345,30 @@ export default function ChatPage() {
         }
       }
 
-      // Por ahora verificamos los datos pedagógicos en consola.
-      // Después se guardarán en Firestore y alimentarán Learning Summary.
       console.log("Corrections:", data.corrections);
       console.log("New words:", data.newWords);
-      console.log("Grammar structures:", data.grammarStructures);
+      console.log(
+        "Grammar structures:",
+        data.grammarStructures
+      );
       console.log("Feedback:", data.feedback);
       console.log("Score:", data.score);
-      console.log("Activity completed:", data.activityCompleted);
-      console.log("Next suggestion:", data.nextSuggestion);
+      console.log(
+        "Activity completed:",
+        data.activityCompleted
+      );
+      console.log(
+        "Next suggestion:",
+        data.nextSuggestion
+      );
     } catch (error) {
-      console.error("Error sending message to backend:", error);
+      console.error("===== CHAT ERROR =====");
+      console.error(error);
+
+      if (error instanceof Error) {
+        console.error(error.message);
+        console.error(error.stack);
+      }
 
       const errorMessage = createMessage({
         role: MESSAGE_ROLES.ASSISTANT,
@@ -319,10 +376,11 @@ export default function ChatPage() {
           "Sorry, I could not process your message right now. Please try again.",
       });
 
-      const conversationWithError = addMessageToConversation(
-        updatedConversation,
-        errorMessage
-      );
+      const conversationWithError =
+        addMessageToConversation(
+          updatedConversation,
+          errorMessage
+        );
 
       setConversation(conversationWithError);
       saveConversation(conversationWithError);
@@ -331,104 +389,94 @@ export default function ChatPage() {
     }
   };
 
-  const registerPracticeHistory = async (context) => {
-    if (!user?.uid || !context) return null;
-
-    const historyKey =
-      `practice_registered_${user.uid}_` +
-      `${context.unitId}_${context.topicId}_` +
-      `${context.activityType}_${context.activityName}`;
-
-    const conversationPracticeId =
-      conversation?.practiceHistoryId || null;
-
-    if (conversationPracticeId) {
-      setPracticeHistoryId(conversationPracticeId);
-
-      sessionStorage.setItem(
-        historyKey,
-        conversationPracticeId
-      );
-
-      return conversationPracticeId;
-    }
-
-    const savedHistoryId = sessionStorage.getItem(historyKey);
-
-    if (
-      savedHistoryId &&
-      savedHistoryId !== "true" &&
-      savedHistoryId !== "false"
-    ) {
-      setPracticeHistoryId(savedHistoryId);
-
-      setConversation((previousConversation) => {
-        if (!previousConversation) return previousConversation;
-
-        const updatedConversation = {
-          ...previousConversation,
-          practiceHistoryId: savedHistoryId,
-          updatedAt: Date.now(),
-        };
-
-        saveConversation(updatedConversation);
-
-        return updatedConversation;
-      });
-
-      return savedHistoryId;
-    }
-
-    if (savedHistoryId === "true" || savedHistoryId === "false") {
-      sessionStorage.removeItem(historyKey);
-    }
-
-    try {
-      const historyItem = createPracticeHistoryItem({
-        userId: user.uid,
-        unitId: context.unitId,
-        unitTitle: context.unitTitle,
-        topicId: context.topicId,
-        topicTitle: context.topicTitle,
-        activityType: context.activityType,
-        activityName: context.activityName,
-        score: 0,
-        messagesCount: 0,
-        correctionsCount: 0,
-        newWordsCount: 0,
-        status: "started",
-      });
-
-      const createdHistoryId = await savePracticeHistory(
-        historyItem
-      );
-
-      setPracticeHistoryId(createdHistoryId);
-      sessionStorage.setItem(historyKey, createdHistoryId);
-
-      setConversation((previousConversation) => {
-        if (!previousConversation) return previousConversation;
-
-        const updatedConversation = {
-          ...previousConversation,
-          practiceHistoryId: createdHistoryId,
-          updatedAt: Date.now(),
-        };
-
-        saveConversation(updatedConversation);
-
-        return updatedConversation;
-      });
-
-      return createdHistoryId;
-    } catch (error) {
-      console.error(
-        "Error registering practice history:",
-        error
-      );
-
+  const registerPracticeHistory = async (
+    context,
+    sourceConversation = conversation
+  ) => {
+    if (!user?.uid || !context) {
       return null;
     }
+
+    /*
+      Si la conversación ya está vinculada con una práctica,
+      se reutiliza el documento existente.
+    */
+    if (sourceConversation?.practiceHistoryId) {
+      return sourceConversation.practiceHistoryId;
+    }
+
+    /*
+      Si ya hay una creación en curso, se devuelve la misma
+      promesa para evitar documentos duplicados.
+    */
+    if (practiceCreationRef.current) {
+      return practiceCreationRef.current;
+    }
+
+    const createPractice = async () => {
+      try {
+        const historyItem = createPracticeHistoryItem({
+          userId: user.uid,
+
+          unitId: context.unitId,
+          unitTitle: context.unitTitle,
+
+          topicId: context.topicId,
+          topicTitle: context.topicTitle,
+
+          activityType: context.activityType,
+          activityName: context.activityName,
+
+          score: 0,
+          messagesCount: 0,
+          correctionsCount: 0,
+          newWordsCount: 0,
+
+          status: "started",
+        });
+
+        const createdHistoryId =
+          await savePracticeHistory(historyItem);
+
+        setConversation((previousConversation) => {
+          if (!previousConversation) {
+            return previousConversation;
+          }
+
+          /*
+            Si otra ejecución ya asignó un ID, no se reemplaza.
+          */
+          if (previousConversation.practiceHistoryId) {
+            return previousConversation;
+          }
+
+          const updatedConversation = {
+            ...previousConversation,
+            practiceHistoryId: createdHistoryId,
+            updatedAt: Date.now(),
+          };
+
+          saveConversation(updatedConversation);
+
+          return updatedConversation;
+        });
+
+        return createdHistoryId;
+      } catch (error) {
+        console.error(
+          "Error registering practice history:",
+          error
+        );
+
+        return null;
+      } finally {
+        practiceCreationRef.current = null;
+      }
+    };
+
+    practiceCreationRef.current = createPractice();
+
+    return practiceCreationRef.current;
   };
 
   /* =========================================================
@@ -667,24 +715,40 @@ export default function ChatPage() {
           onClose={() => setShowSideMenu(false)}
           units={learningUnits}
           currentContext={conversation.context}
-          onChangeContext={async (newContext) => {
-            await registerPracticeHistory(newContext);
-            
-            const updatedConversation = {
-              ...conversation,
-              context: newContext,
-              messages: [
-                ...conversation.messages,
-                createMessage({
-                  role: MESSAGE_ROLES.ASSISTANT,
-                  content: `Great! Now let’s practice ${newContext.topicTitle} through ${newContext.activityName}.`,
-                }),
-              ],
+          onChangeContext={(newContext) => {
+            const initialTutorMessage = createMessage({
+              role: MESSAGE_ROLES.ASSISTANT,
+              content: `Great! Now let’s practice ${newContext.topicTitle} through ${newContext.activityName}.`,
+            });
+
+            const newConversation = {
+              id: crypto.randomUUID(),
+
+              context: {
+                unitId: newContext.unitId,
+                unitTitle: newContext.unitTitle,
+                topicId: newContext.topicId,
+                topicTitle: newContext.topicTitle,
+                activityType: newContext.activityType,
+                activityName: newContext.activityName,
+                activityDescription:
+                  newContext.activityDescription || "",
+              },
+
+              practiceHistoryId: null,
+
+              learningSummary:
+                createEmptyLearningSummary(),
+
+              messages: [initialTutorMessage],
+
+              createdAt: Date.now(),
               updatedAt: Date.now(),
             };
 
-            setConversation(updatedConversation);
-            saveConversation(updatedConversation);
+            setConversation(newConversation);
+            saveConversation(newConversation);
+            setShowLearningSummary(false);
           }}
         />
       </section>

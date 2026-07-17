@@ -205,13 +205,14 @@ Respond according to the required structured format.
 
     return parsedResponse;
   } catch (error) {
-    console.error("Error generating tutor response:", error);
+    console.error("========== GEMINI ERROR ==========");
     console.error("Error name:", error?.name);
     console.error("Error message:", error?.message);
     console.error("Status:", error?.status);
     console.error("Code:", error?.code);
     console.error("Full error:", error);
+    console.error("==================================");
 
-    return error;
+    throw error;
   }
 }

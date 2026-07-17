@@ -6,6 +6,12 @@ export const MESSAGE_ROLES = {
   SYSTEM: "system",
 };
 
+export const createEmptyLearningSummary = () => ({
+  corrections: [],
+  newWords: [],
+  grammarStructures: [],
+});
+
 export const createNewConversation = (context) => {
   return {
     id: crypto.randomUUID(),
@@ -17,19 +23,12 @@ export const createNewConversation = (context) => {
       topicTitle: context.topicTitle,
       activityType: context.activityType,
       activityName: context.activityName,
-      activityDescription:
-        context.activityDescription || "",
+      activityDescription: context.activityDescription || "",
     },
 
-    // NUEVO
     practiceHistoryId: null,
 
-    // NUEVO
-    learningSummary: {
-      corrections: [],
-      newWords: [],
-      grammarStructures: [],
-    },
+    learningSummary: createEmptyLearningSummary(),
 
     messages: [],
 
@@ -56,12 +55,50 @@ export const addMessageToConversation = (conversation, message) => {
 };
 
 export const saveConversation = (conversation) => {
-  sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(conversation));
+  if (!conversation) return;
+
+  sessionStorage.setItem(
+    CHAT_STORAGE_KEY,
+    JSON.stringify(conversation)
+  );
 };
 
 export const getConversation = () => {
   const data = sessionStorage.getItem(CHAT_STORAGE_KEY);
-  return data ? JSON.parse(data) : null;
+
+  if (!data) return null;
+
+  try {
+    const parsedConversation = JSON.parse(data);
+
+    /*
+      Migración para conversaciones creadas antes del refactor.
+      Si no tenían practiceHistoryId o learningSummary,
+      se agregan automáticamente.
+    */
+    return {
+      ...parsedConversation,
+
+      practiceHistoryId:
+        parsedConversation.practiceHistoryId || null,
+
+      learningSummary: {
+        corrections:
+          parsedConversation.learningSummary?.corrections || [],
+
+        newWords:
+          parsedConversation.learningSummary?.newWords || [],
+
+        grammarStructures:
+          parsedConversation.learningSummary
+            ?.grammarStructures || [],
+      },
+    };
+  } catch (error) {
+    console.error("Error reading saved conversation:", error);
+    clearConversation();
+    return null;
+  }
 };
 
 export const clearConversation = () => {

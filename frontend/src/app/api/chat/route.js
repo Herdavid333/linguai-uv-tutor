@@ -33,7 +33,8 @@ export async function POST(request) {
 
     return Response.json(aiResponse);
   } catch (error) {
-    console.error("Chat API error:", error);
+    console.error("========== API CHAT ERROR ==========");
+    console.error(error);
 
     return Response.json(
       {
@@ -42,7 +43,12 @@ export async function POST(request) {
         status: error?.status || null,
         code: error?.code || null,
       },
-      { status: error?.status || 500 }
+      {
+        status:
+          typeof error?.status === "number"
+            ? error.status
+            : 500,
+      }
     );
   }
 }

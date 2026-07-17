@@ -135,9 +135,16 @@ export const updatePracticeHistoryWithAI = async ({
 
     lastAssistantReply: aiResponse.assistantReply || "",
     nextSuggestion: aiResponse.nextSuggestion || "",
-    activityCompleted: Boolean(aiResponse.activityCompleted),
 
-    status: aiResponse.activityCompleted ? "completed" : "started",
+    /*
+      Gemini puede sugerir que ya existe suficiente evidencia,
+      pero no finaliza directamente la práctica.
+    */
+    modelSuggestedCompletion: Boolean(
+      aiResponse.activityCompleted
+    ),
+
+    status: "started",
     updatedAt: serverTimestamp(),
   };
 
@@ -183,17 +190,15 @@ export const updatePracticeHistoryWithAI = async ({
     });
   }
 
-  if (aiResponse.activityCompleted) {
-    updateData.completedAt = serverTimestamp();
-  }
-
   await updateDoc(practiceRef, updateData);
 };
 
 /* =========================================================
-   CONSULTAR UNA PRÁCTICA POR SU ID
+   CONSULTAR UNA PRÁCTICA POR ID
 ========================================================= */
-export const getPracticeHistoryById = async (practiceHistoryId) => {
+export const getPracticeHistoryById = async (
+  practiceHistoryId
+) => {
   if (!practiceHistoryId) return null;
 
   const practiceRef = doc(
