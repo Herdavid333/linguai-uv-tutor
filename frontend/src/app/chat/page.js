@@ -45,13 +45,18 @@ export default function ChatPage() {
   const [isAssistantTyping, setIsAssistantTyping] = useState(false);
   const [showSideMenu, setShowSideMenu] = useState(false);
   const [showLearningSummary, setShowLearningSummary] = useState(false);
+  const [animatedAssistantText, setAnimatedAssistantText] = useState("");
+  const [isAnimatingAssistant, setIsAnimatingAssistant] = useState(false);
 
   const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
   const practiceCreationRef = useRef(null);
+  const typingAnimationRef = useRef(null);
 
   const learningSummary =
     conversation?.learningSummary ||
     createEmptyLearningSummary();
+    
 
   /* =========================================================
      CARGA INICIAL DE LA CONVERSACIÓN
@@ -136,6 +141,14 @@ export default function ChatPage() {
     loadSavedConversation();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (typingAnimationRef.current) {
+        clearInterval(typingAnimationRef.current);
+      }
+    };
+  }, []);
+
   /* =========================================================
      AUTO SCROLL AL ÚLTIMO MENSAJE
   ========================================================= */
@@ -144,8 +157,18 @@ export default function ChatPage() {
       behavior: "smooth",
       block: "end",
     });
-  }, [conversation?.messages, isAssistantTyping]);
+  }, [
+    conversation?.messages,
+    isAssistantTyping,
+    animatedAssistantText,
+  ]);
 
+
+  useEffect(() => {
+    if (!isAssistantTyping && conversation) {
+      inputRef.current?.focus();
+    }
+  }, [isAssistantTyping, conversation]);
 
   useEffect(() => {
     if (
@@ -166,6 +189,40 @@ export default function ChatPage() {
     user?.uid,
   ]);
 
+  const animateAssistantReply = (text) => {
+    return new Promise((resolve) => {
+      if (!text) {
+        resolve();
+        return;
+      }
+
+      if (typingAnimationRef.current) {
+        clearInterval(typingAnimationRef.current);
+      }
+
+      const characters = Array.from(text);
+      let currentIndex = 0;
+
+      setAnimatedAssistantText("");
+      setIsAnimatingAssistant(true);
+
+      typingAnimationRef.current = setInterval(() => {
+        currentIndex += 1;
+
+        setAnimatedAssistantText(
+          characters.slice(0, currentIndex).join("")
+        );
+
+        if (currentIndex >= characters.length) {
+          clearInterval(typingAnimationRef.current);
+          typingAnimationRef.current = null;
+          setIsAnimatingAssistant(false);
+          resolve();
+        }
+      }, 14);
+    });
+  };
+
   /* =========================================================
      ENVÍO DE MENSAJES AL CHAT
   ========================================================= */
@@ -173,7 +230,7 @@ export default function ChatPage() {
     e.preventDefault();
 
     const trimmedMessage = inputMessage.trim();
-
+    
     if (!trimmedMessage || !conversation || isAssistantTyping) {
       return;
     }
@@ -305,11 +362,6 @@ export default function ChatPage() {
           );
       }
 
-      const assistantMessage = createMessage({
-        role: MESSAGE_ROLES.ASSISTANT,
-        content: data.assistantReply,
-      });
-
       const conversationWithSummary = {
         ...updatedConversation,
 
@@ -321,6 +373,17 @@ export default function ChatPage() {
         updatedAt: Date.now(),
       };
 
+      /*
+        Cuando Gemini ya respondió, el texto empieza a aparecer
+        progresivamente en la burbuja temporal del tutor.
+      */
+      await animateAssistantReply(data.assistantReply);
+
+      const assistantMessage = createMessage({
+        role: MESSAGE_ROLES.ASSISTANT,
+        content: data.assistantReply,
+      });
+
       const conversationWithAssistant =
         addMessageToConversation(
           conversationWithSummary,
@@ -329,6 +392,12 @@ export default function ChatPage() {
 
       setConversation(conversationWithAssistant);
       saveConversation(conversationWithAssistant);
+
+      /*
+        La burbuja temporal se limpia porque el mensaje completo
+        ya forma parte de la conversación.
+      */
+      setAnimatedAssistantText("");
 
       if (activePracticeHistoryId) {
         try {
@@ -362,13 +431,18 @@ export default function ChatPage() {
         data.nextSuggestion
       );
     } catch (error) {
-      console.error("===== CHAT ERROR =====");
-      console.error(error);
+      console.error(
+        "Error sending message to backend:",
+        error
+      );
 
-      if (error instanceof Error) {
-        console.error(error.message);
-        console.error(error.stack);
+      if (typingAnimationRef.current) {
+        clearInterval(typingAnimationRef.current);
+        typingAnimationRef.current = null;
       }
+
+      setAnimatedAssistantText("");
+      setIsAnimatingAssistant(false);
 
       const errorMessage = createMessage({
         role: MESSAGE_ROLES.ASSISTANT,
@@ -625,14 +699,68 @@ export default function ChatPage() {
              ESTADO VISUAL "LINGUAI IS TYPING"
           ========================================================= */}
           {isAssistantTyping && (
-            <div className="flex justify-end items-center gap-2 pr-8">
-              <span className="text-[22px] tracking-[3px] text-black">
-                •••
-              </span>
+            <div className="flex items-end justify-start gap-5">
+              {/* Avatar temporal del tutor */}
+              <div className="ml-2 flex w-[42px] shrink-0 flex-col items-center">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-black bg-white">
+                  <Bot size={20} />
+                </div>
 
-              <span className="text-[11px] font-extrabold text-black">
-                LINGUAI is Typing
-              </span>
+                <span className="text-[15px] font-bold text-red-600">
+                  LINGUAI
+                </span>
+              </div>
+
+              {/* Burbuja temporal */}
+              <div className="relative max-w-[72%] whitespace-pre-wrap break-words rounded-[22px] rounded-bl-[4px] bg-[#ffb3b3] px-4 py-3 text-[13px] font-semibold leading-tight text-black sm:max-w-[70%] sm:text-[14px]">
+                {isAnimatingAssistant || animatedAssistantText ? (
+                  <>
+                    {animatedAssistantText}
+
+                    <span className="ml-[2px] inline-block animate-pulse font-bold">
+                      |
+                    </span>
+                  </>
+                ) : (
+                  <div className="flex h-5 items-center gap-[3px]">
+                    <span
+                      className="inline-block animate-bounce text-[20px] leading-none"
+                      style={{
+                        animationDelay: "0ms",
+                        animationDuration: "900ms",
+                      }}
+                    >
+                      •
+                    </span>
+
+                    <span
+                      className="inline-block animate-bounce text-[20px] leading-none"
+                      style={{
+                        animationDelay: "150ms",
+                        animationDuration: "900ms",
+                      }}
+                    >
+                      •
+                    </span>
+
+                    <span
+                      className="inline-block animate-bounce text-[20px] leading-none"
+                      style={{
+                        animationDelay: "300ms",
+                        animationDuration: "900ms",
+                      }}
+                    >
+                      •
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Acciones visuales del tutor */}
+              <div className="flex flex-col gap-2">
+                <Volume2 size={18} className="text-black" />
+                <Lightbulb size={18} className="text-black" />
+              </div>
             </div>
           )}
 
@@ -688,21 +816,18 @@ export default function ChatPage() {
 
             {/* Input de texto */}
             <input
+              ref={inputRef}
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               disabled={isAssistantTyping}
-              placeholder={
-                isAssistantTyping
-                  ? "LINGUAI is responding..."
-                  : "Type a message here"
-              }
+              placeholder="Type a message here"
               className="flex-1 bg-transparent text-[14px] font-semibold text-black outline-none placeholder:text-gray-600 disabled:cursor-not-allowed disabled:opacity-60"
             />
 
             {/* Botón de envío */}
             <button
               type="submit"
-              disabled={isAssistantTyping}
+              disabled={false}
               className="disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Send size={22} className="text-black" />
