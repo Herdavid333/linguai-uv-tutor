@@ -94,19 +94,52 @@ export default function LearningSummaryPanel({
 
         <SummarySection title="Grammar Structures">
           {grammarStructures.length > 0 ? (
-            <ul className="space-y-2">
-              {grammarStructures.map((structure, index) => (
-                <li
-                  key={`${structure}-${index}`}
-                  className="flex items-start gap-2 text-[15px] font-semibold text-black"
-                >
-                  <span className="mt-[2px] font-extrabold text-red-600">
-                    •
-                  </span>
+            <ul className="space-y-3">
+              {grammarStructures.map((item, index) => {
+                const structureName =
+                  typeof item === "string"
+                    ? item
+                    : item?.structure || "";
 
-                  <span>{structure}</span>
-                </li>
-              ))}
+                const explanation =
+                  typeof item === "object"
+                    ? item?.explanation || ""
+                    : "";
+
+                const example =
+                  typeof item === "object"
+                    ? item?.example || ""
+                    : "";
+
+                return (
+                  <li
+                    key={`${structureName}-${index}`}
+                    className="flex items-start gap-2 text-[15px] text-black"
+                  >
+                    <span className="mt-[2px] font-extrabold text-red-600">
+                      •
+                    </span>
+
+                    <div>
+                      <p className="font-extrabold">
+                        {structureName}
+                      </p>
+
+                      {explanation && (
+                        <p className="mt-1 font-semibold">
+                          {explanation}
+                        </p>
+                      )}
+
+                      {example && (
+                        <p className="mt-1 text-[14px] italic">
+                          Example: {example}
+                        </p>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <EmptyMessage text="No grammar structures yet." />

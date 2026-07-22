@@ -1,36 +1,293 @@
-export default function ActivityHistoryCard({ activity }) {
-  const formattedDate = activity.startedAt?.toDate
-    ? activity.startedAt.toDate().toLocaleString()
-    : "Date not available";
+const parseDate = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  if (
+    typeof value?.toDate ===
+    "function"
+  ) {
+    return value.toDate();
+  }
+
+  if (value instanceof Date) {
+    return value;
+  }
+
+  const convertedDate =
+    new Date(value);
+
+  return Number.isNaN(
+    convertedDate.getTime()
+  )
+    ? null
+    : convertedDate;
+};
+
+const formatPracticeDate = (
+  activity
+) => {
+  const dateValue =
+    activity?.completedAt ??
+    activity?.updatedAt ??
+    activity?.startedAt;
+
+  const date =
+    parseDate(dateValue);
+
+  if (!date) {
+    return "Date unavailable";
+  }
+
+  return new Intl.DateTimeFormat(
+    "en-GB",
+    {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }
+  ).format(date);
+};
+
+const getActivityStatus = (
+  activity
+) => {
+  if (
+    activity?.status ===
+      "completed" &&
+    activity?.evaluationStatus ===
+      "evaluated"
+  ) {
+    return "Completed";
+  }
+
+  if (
+    activity?.status ===
+      "completed" &&
+    activity?.evaluationStatus ===
+      "insufficient"
+  ) {
+    return "Completed — Not enough evidence";
+  }
+
+  return "In progress";
+};
+
+const getActivityResult = (
+  activity
+) => {
+  const finalScore = Number(
+    activity?.finalScore
+  );
+
+  if (
+    activity?.status ===
+      "completed" &&
+    activity?.evaluationStatus ===
+      "evaluated" &&
+    Number.isFinite(finalScore)
+  ) {
+    return {
+      label: "Final result",
+      value: `${Math.round(
+        finalScore
+      )}%`,
+    };
+  }
+
+  if (
+    activity?.evaluationStatus ===
+    "insufficient"
+  ) {
+    return {
+      label: "Result",
+      value:
+        "Not enough evidence",
+    };
+  }
+
+  const latestScore = Number(
+    activity?.latestScore
+  );
+
+  if (
+    activity?.status ===
+      "in_progress" &&
+    Number.isFinite(latestScore)
+  ) {
+    return {
+      label: "Partial score",
+      value: `${Math.round(
+        latestScore
+      )}%`,
+    };
+  }
+
+  return {
+    label: "Result",
+    value: "In progress",
+  };
+};
+
+export default function ActivityHistoryCard({
+  activity,
+}) {
+  const activityDate =
+    formatPracticeDate(activity);
+
+  const status =
+    getActivityStatus(activity);
+
+  const result =
+    getActivityResult(activity);
+
+  const meaningfulInteractions =
+    Number(
+      activity?.meaningfulInteractionsCount
+    );
+
+  const studentMessages =
+    Number(
+      activity?.studentMessagesCount
+    );
+
+  const interactionCount =
+    Number.isFinite(
+      meaningfulInteractions
+    )
+      ? meaningfulInteractions
+      : Number.isFinite(studentMessages)
+        ? studentMessages
+        : 0;
+
+  const isEvaluated =
+    activity?.status ===
+      "completed" &&
+    activity?.evaluationStatus ===
+      "evaluated";
+
+  const performance =
+    activity?.performance &&
+    typeof activity.performance ===
+      "object"
+      ? activity.performance
+      : null;
 
   return (
-    <div className="rounded-md bg-[#d9d9d9] p-3 text-[13px] font-bold text-black shadow">
-      <p className="font-extrabold text-red-600">{formattedDate}</p>
-
-      <p className="mt-1 font-extrabold text-black">
-        {activity.unitTitle}
+    <article className="rounded-md bg-[#d9d9d9] px-3 py-3 shadow-sm">
+      <p className="text-[12px] font-extrabold text-red-600">
+        {activityDate}
       </p>
 
-      <p>
-        <span className="font-extrabold text-red-600">Topic:</span>{" "}
-        <span className="font-semibold text-black">
-          {activity.topicTitle}
-        </span>
+      <h3 className="mt-2 text-[14px] font-extrabold leading-tight text-black">
+        {activity?.unitTitle ||
+          "Unit unavailable"}
+      </h3>
+
+      <p className="mt-1 text-[12px] font-bold leading-tight text-black">
+        <span className="font-extrabold text-red-600">
+          Topic:
+        </span>{" "}
+        {activity?.topicTitle ||
+          "Not available"}
       </p>
 
-      <p>
-        <span className="font-extrabold text-red-600">Activity:</span>{" "}
-        <span className="font-semibold text-black">
-          {activity.activityName}
-        </span>
+      <p className="mt-1 text-[12px] font-bold leading-tight text-black">
+        <span className="font-extrabold text-red-600">
+          Activity:
+        </span>{" "}
+        {activity?.activityName ||
+          activity?.activityType ||
+          "Not available"}
       </p>
 
-      <p>
-        <span className="font-extrabold text-red-600">Result:</span>{" "}
-        <span className="font-semibold text-black">
-          {activity.score ?? 0}%
-        </span>
+      <p className="mt-1 text-[12px] font-bold leading-tight text-black">
+        <span className="font-extrabold text-red-600">
+          Status:
+        </span>{" "}
+        {status}
       </p>
-    </div>
+
+      <p className="mt-1 text-[12px] font-bold leading-tight text-black">
+        <span className="font-extrabold text-red-600">
+          {result.label}:
+        </span>{" "}
+        {result.value}
+      </p>
+
+      <p className="mt-1 text-[12px] font-bold leading-tight text-black">
+        <span className="font-extrabold text-red-600">
+          Meaningful interactions:
+        </span>{" "}
+        {interactionCount}
+      </p>
+
+      {isEvaluated &&
+        performance && (
+          <div className="mt-3 border-t border-gray-500 pt-2">
+            <p className="mb-1 text-[12px] font-extrabold text-black">
+              Performance
+            </p>
+
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] font-semibold text-black">
+              <MetricValue
+                label="Accuracy"
+                value={
+                  performance.accuracy
+                }
+              />
+
+              <MetricValue
+                label="Grammar"
+                value={
+                  performance.grammar
+                }
+              />
+
+              <MetricValue
+                label="Vocabulary"
+                value={
+                  performance.vocabulary
+                }
+              />
+
+              <MetricValue
+                label="Interaction"
+                value={
+                  performance.interaction
+                }
+              />
+            </div>
+          </div>
+        )}
+    </article>
+  );
+}
+
+function MetricValue({
+  label,
+  value,
+}) {
+  const numericValue =
+    Number(value);
+
+  const hasValue =
+    Number.isFinite(
+      numericValue
+    );
+
+  return (
+    <p>
+      <span className="font-extrabold text-red-600">
+        {label}:
+      </span>{" "}
+      {hasValue
+        ? `${Math.round(
+            numericValue
+          )}%`
+        : "N/A"}
+    </p>
   );
 }

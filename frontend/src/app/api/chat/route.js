@@ -23,12 +23,23 @@ export async function POST(request) {
     }
 
     const aiResponse = await generateTutorResponse({
-      unit,
-      topic,
-      activity,
-      difficulty,
-      recentMessages,
-      userMessage,
+      context: {
+        unit,
+        topic,
+        activity,
+        difficulty,
+
+        unitTitle: unit?.title || "",
+        topicTitle: topic?.title || "",
+        activityName: activity?.name || "",
+        activityType: activity?.type || "conversation",
+        activityInstructions:
+          activity?.instructions || "",
+      },
+
+      messages: recentMessages,
+
+      latestMessage: userMessage,
     });
 
     return Response.json(aiResponse);

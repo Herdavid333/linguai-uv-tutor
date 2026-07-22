@@ -8,11 +8,11 @@ import {
 } from "react";
 import { Home, User, X } from "lucide-react";
 
-import { mockFrequentErrors } from "../../data/mockFrequentErrors";
 
 import ProgressUnitRow from "../../components/progress/ProgressUnitRow";
 import FrequentErrorCard from "../../components/progress/FrequentErrorCard";
 import ActivityHistoryCard from "../../components/progress/ActivityHistoryCard";
+import VocabularyCard from "../../components/progress/VocabularyCard";
 
 import { useAuth } from "../../context/AuthContext";
 
@@ -26,6 +26,7 @@ import {
   calculateOverallProgress,
   calculateVocabularyStats,
   calculatePerformanceStats,
+  calculateFrequentErrors,
 } from "../../utils/progressCalculations";
 
 import { learningUnits } from "../../data/learningContent";
@@ -112,6 +113,12 @@ export default function ProgressPage() {
 
   const performanceStats = useMemo(() => {
     return calculatePerformanceStats(
+      practiceHistory
+    );
+  }, [practiceHistory]);
+
+  const frequentErrors = useMemo(() => {
+    return calculateFrequentErrors(
       practiceHistory
     );
   }, [practiceHistory]);
@@ -444,26 +451,47 @@ export default function ProgressPage() {
               </div>
 
               <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
-                {mockFrequentErrors.length ===
-                0 ? (
-                  <p className="py-5 text-center text-[14px] font-bold text-gray-600">
-                    No frequent errors registered
-                    yet.
+                {loadingHistory ? (
+                  <p className="py-5 text-center text-[14px] font-bold text-black">
+                    Loading frequent errors...
                   </p>
+                ) : frequentErrors.length === 0 ? (
+                  <div className="flex min-h-[180px] flex-col items-center justify-center px-5 text-center">
+                    <p className="text-[15px] font-extrabold text-black">
+                      No frequent errors yet
+                    </p>
+
+                    <p className="mt-2 text-[13px] font-semibold leading-snug text-gray-600">
+                      Your corrections will appear here as you continue practicing.
+                    </p>
+                  </div>
                 ) : (
-                  mockFrequentErrors.map(
-                    (error) => (
-                      <div key={error.id}>
-                        <h3 className="sticky top-0 bg-white py-1 text-center text-[18px] font-extrabold text-black">
-                          {error.category}
+                  frequentErrors.map((group) => (
+                    <section
+                      key={group.category}
+                      className="mb-2"
+                    >
+                      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-400 bg-white py-1">
+                        <h3 className="text-[18px] font-extrabold text-black">
+                          {group.category}
                         </h3>
 
+                        <span className="text-[11px] font-extrabold text-red-600">
+                          {group.totalOccurrences}{" "}
+                          {group.totalOccurrences === 1
+                            ? "occurrence"
+                            : "occurrences"}
+                        </span>
+                      </div>
+
+                      {group.errors.map((error) => (
                         <FrequentErrorCard
+                          key={error.id}
                           {...error}
                         />
-                      </div>
-                    )
-                  )
+                      ))}
+                    </section>
+                  ))
                 )}
               </div>
             </div>
@@ -522,26 +550,26 @@ export default function ProgressPage() {
                         "";
 
                       return (
-                        <article
+                        <VocabularyCard
                           key={`${word}-${index}`}
-                          className="rounded-lg border border-gray-300 bg-white p-3 shadow-sm"
-                        >
-                          <h3 className="text-[17px] font-extrabold text-red-600">
-                            {word}
-                          </h3>
-
-                          {meaning && (
-                            <p className="mt-1 text-[14px] font-semibold text-black">
-                              {meaning}
-                            </p>
-                          )}
-
-                          {example && (
-                            <p className="mt-2 text-[13px] italic text-gray-600">
-                              “{example}”
-                            </p>
-                          )}
-                        </article>
+                          word={word}
+                          meaning={
+                            meaning ||
+                            "Meaning unavailable"
+                          }
+                          example={
+                            example ||
+                            "No example registered."
+                          }
+                          unit={
+                            item?.unitTitle ||
+                            item?.topicTitle ||
+                            ""
+                          }
+                          occurrences={
+                            item?.occurrences || 1
+                          }
+                        />
                       );
                     }
                   )

@@ -31,7 +31,9 @@ import {
   getPracticeHistoryById,
   savePracticeHistory,
   updatePracticeHistoryWithAI,
+  finalizePracticeHistory,
 } from "../../services/practiceHistoryService";
+
 
 export default function ChatPage() {
   /* =========================================================
@@ -268,6 +270,9 @@ export default function ChatPage() {
         activity: {
           type: context.activityType || "conversation",
           name: context.activityName,
+          instructions:
+            context.activityDescription ||
+            "Guide the student through a complete A1 practice activity.",
         },
 
         difficulty: "Beginner",
@@ -374,9 +379,41 @@ export default function ChatPage() {
       };
 
       /*
-        Cuando Gemini ya respondió, el texto empieza a aparecer
-        progresivamente en la burbuja temporal del tutor.
+        Guarda primero el resumen local para que la conversación
+        mantenga los datos aunque la animación tarde.
       */
+      setConversation(
+        conversationWithSummary
+      );
+
+      saveConversation(
+        conversationWithSummary
+      );
+
+      /*
+        Persiste en Firestore antes de iniciar la animación.
+      */
+
+      if (activePracticeHistoryId) {
+        try {
+          await updatePracticeHistoryWithAI({
+            practiceHistoryId: activePracticeHistoryId,
+            aiResponse: data,
+            studentMessage: trimmedMessage,
+          });
+        } catch (persistenceError) {
+          console.error(
+            "The tutor replied, but the practice history could not be updated:",
+            persistenceError
+          );
+        }
+      }
+
+      /*
+        Después de persistir, se muestra la respuesta
+        progresivamente.
+      */
+
       await animateAssistantReply(data.assistantReply);
 
       const assistantMessage = createMessage({
@@ -398,21 +435,6 @@ export default function ChatPage() {
         ya forma parte de la conversación.
       */
       setAnimatedAssistantText("");
-
-      if (activePracticeHistoryId) {
-        try {
-          await updatePracticeHistoryWithAI({
-            practiceHistoryId:
-              activePracticeHistoryId,
-            aiResponse: data,
-          });
-        } catch (persistenceError) {
-          console.error(
-            "The tutor replied, but the practice history could not be updated:",
-            persistenceError
-          );
-        }
-      }
 
       console.log("Corrections:", data.corrections);
       console.log("New words:", data.newWords);
@@ -501,12 +523,7 @@ export default function ChatPage() {
           activityType: context.activityType,
           activityName: context.activityName,
 
-          score: 0,
-          messagesCount: 0,
-          correctionsCount: 0,
-          newWordsCount: 0,
-
-          status: "started",
+          status: "in_progress",
         });
 
         const createdHistoryId =
@@ -553,6 +570,84 @@ export default function ChatPage() {
     return practiceCreationRef.current;
   };
 
+
+  const handleChangeContext = async (newContext) => {
+    if (!newContext || isAssistantTyping) {
+      return;
+    }
+
+    const currentContext = conversation?.context;
+
+    const isSameActivity =
+      currentContext?.unitId === newContext.unitId &&
+      currentContext?.topicId === newContext.topicId &&
+      currentContext?.activityType === newContext.activityType &&
+      currentContext?.activityName === newContext.activityName;
+
+    if (isSameActivity) {
+      setShowSideMenu(false);
+      return;
+    }
+
+    try {
+      if (conversation?.practiceHistoryId) {
+        await finalizePracticeHistory(
+          conversation.practiceHistoryId
+        );
+      }
+
+      const initialTutorMessage = createMessage({
+        role: MESSAGE_ROLES.ASSISTANT,
+        content: `Great! Now let’s practice ${newContext.topicTitle} through ${newContext.activityName}.`,
+      });
+
+      const newConversation = {
+        id: crypto.randomUUID(),
+
+        context: {
+          unitId: newContext.unitId,
+          unitTitle: newContext.unitTitle,
+
+          topicId: newContext.topicId,
+          topicTitle: newContext.topicTitle,
+
+          activityType:
+            newContext.activityType ||
+            "conversation",
+
+          activityName:
+            newContext.activityName,
+
+          activityDescription:
+            newContext.activityDescription || "",
+        },
+
+        practiceHistoryId: null,
+
+        learningSummary:
+          createEmptyLearningSummary(),
+
+        messages: [initialTutorMessage],
+
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      setConversation(newConversation);
+      saveConversation(newConversation);
+
+      setShowLearningSummary(false);
+      setShowSideMenu(false);
+      setInputMessage("");
+      setAnimatedAssistantText("");
+    } catch (error) {
+      console.error(
+        "Error changing practice activity:",
+        error
+      );
+    }
+  };
+
   /* =========================================================
      ESTADO CUANDO NO HAY CONVERSACIÓN SELECCIONADA
   ========================================================= */
@@ -563,6 +658,7 @@ export default function ChatPage() {
       </main>
     );
   }
+
 
   return (
     /* =========================================================
@@ -827,7 +923,10 @@ export default function ChatPage() {
             {/* Botón de envío */}
             <button
               type="submit"
-              disabled={false}
+              disabled={
+                isAssistantTyping ||
+                !inputMessage.trim()
+              }
               className="disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Send size={22} className="text-black" />
@@ -840,41 +939,7 @@ export default function ChatPage() {
           onClose={() => setShowSideMenu(false)}
           units={learningUnits}
           currentContext={conversation.context}
-          onChangeContext={(newContext) => {
-            const initialTutorMessage = createMessage({
-              role: MESSAGE_ROLES.ASSISTANT,
-              content: `Great! Now let’s practice ${newContext.topicTitle} through ${newContext.activityName}.`,
-            });
-
-            const newConversation = {
-              id: crypto.randomUUID(),
-
-              context: {
-                unitId: newContext.unitId,
-                unitTitle: newContext.unitTitle,
-                topicId: newContext.topicId,
-                topicTitle: newContext.topicTitle,
-                activityType: newContext.activityType,
-                activityName: newContext.activityName,
-                activityDescription:
-                  newContext.activityDescription || "",
-              },
-
-              practiceHistoryId: null,
-
-              learningSummary:
-                createEmptyLearningSummary(),
-
-              messages: [initialTutorMessage],
-
-              createdAt: Date.now(),
-              updatedAt: Date.now(),
-            };
-
-            setConversation(newConversation);
-            saveConversation(newConversation);
-            setShowLearningSummary(false);
-          }}
+          onChangeContext={handleChangeContext}
         />
       </section>
     </main>
@@ -897,7 +962,10 @@ function normalizeCorrectionType(type = "") {
     "grammar",
     "vocabulary",
     "spelling",
+    "capitalization",
     "coherence",
+    "word_order",
+    "other",
   ];
 
   return supportedTypes.includes(normalizedType)
@@ -1026,25 +1094,78 @@ function mergeNewWords(currentWords, incomingWords) {
 }
 
 function mergeGrammarStructures(
-  currentStructures,
-  incomingStructures
+  currentStructures = [],
+  incomingStructures = []
 ) {
   const structuresMap = new Map();
 
   [...currentStructures, ...incomingStructures].forEach(
-    (structure) => {
-      if (!structure || typeof structure !== "string") return;
+    (item) => {
+      let normalizedItem;
 
-      const normalizedStructure = normalizeText(structure);
+      if (typeof item === "string") {
+        normalizedItem = {
+          structure: item.trim(),
+          explanation: "",
+          example: "",
+        };
+      } else if (
+        item &&
+        typeof item === "object"
+      ) {
+        normalizedItem = {
+          structure:
+            item.structure?.trim() ||
+            item.name?.trim() ||
+            item.title?.trim() ||
+            "",
 
-      if (!structuresMap.has(normalizedStructure)) {
-        structuresMap.set(
-          normalizedStructure,
-          structure.trim()
-        );
+          explanation:
+            item.explanation?.trim() || "",
+
+          example:
+            item.example?.trim() || "",
+        };
+      } else {
+        return;
       }
+
+      if (!normalizedItem.structure) {
+        return;
+      }
+
+      const key = normalizeText(
+        normalizedItem.structure
+      );
+
+      const existingStructure =
+        structuresMap.get(key);
+
+      if (existingStructure) {
+        structuresMap.set(key, {
+          structure:
+            existingStructure.structure,
+
+          explanation:
+            existingStructure.explanation ||
+            normalizedItem.explanation,
+
+          example:
+            existingStructure.example ||
+            normalizedItem.example,
+        });
+
+        return;
+      }
+
+      structuresMap.set(
+        key,
+        normalizedItem
+      );
     }
   );
 
-  return Array.from(structuresMap.values());
+  return Array.from(
+    structuresMap.values()
+  );
 }
