@@ -11,6 +11,7 @@ export async function POST(request) {
       difficulty,
       recentMessages = [],
       userMessage,
+      studentProfile = null,
     } = body;
 
   console.log("BODY /api/chat:", body);
@@ -40,6 +41,8 @@ export async function POST(request) {
       messages: recentMessages,
 
       latestMessage: userMessage,
+      
+      studentProfile,
     });
 
     return Response.json(aiResponse);

@@ -34,10 +34,163 @@ function formatConversation(messages = []) {
     .join("\n");
 }
 
+function formatStudentProfile(
+  studentProfile
+) {
+  if (
+    !studentProfile ||
+    typeof studentProfile !== "object"
+  ) {
+    return `
+No historical student profile is available yet.
+
+Use a standard supportive A1 teaching approach.
+`;
+  }
+
+  const performance =
+    studentProfile?.performance &&
+    typeof studentProfile.performance ===
+      "object"
+      ? studentProfile.performance
+      : {};
+
+  const skillLevels =
+    studentProfile?.skillLevels &&
+    typeof studentProfile.skillLevels ===
+      "object"
+      ? studentProfile.skillLevels
+      : {};
+
+  const priorities =
+    Array.isArray(
+      studentProfile?.teachingPriorities
+    )
+      ? studentProfile.teachingPriorities
+      : [];
+
+  const frequentErrors =
+    Array.isArray(
+      studentProfile?.frequentErrors
+    )
+      ? studentProfile.frequentErrors
+      : [];
+
+  const learnedVocabulary =
+    Array.isArray(
+      studentProfile?.learnedVocabulary
+    )
+      ? studentProfile.learnedVocabulary
+      : [];
+
+  const formatMetric = (value) => {
+    const numericValue = Number(value);
+
+    return Number.isFinite(numericValue)
+      ? `${Math.round(numericValue)}%`
+      : "Not available";
+  };
+
+  const formattedPriorities =
+    priorities.length > 0
+      ? priorities
+          .map(
+            (priority, index) =>
+              `${index + 1}. ${priority}`
+          )
+          .join("\n")
+      : "No specific priorities yet.";
+
+  const formattedErrors =
+    frequentErrors.length > 0
+      ? frequentErrors
+          .map(
+            (error, index) =>
+              `${index + 1}. ${
+                error?.label ||
+                "Unspecified error"
+              } | Type: ${
+                error?.type || "other"
+              } | Repeated: ${
+                error?.occurrences || 1
+              } times`
+          )
+          .join("\n")
+      : "No recurring errors registered.";
+
+  const formattedVocabulary =
+    learnedVocabulary.length > 0
+      ? learnedVocabulary
+          .map(
+            (item) => item?.word
+          )
+          .filter(Boolean)
+          .join(", ")
+      : "No vocabulary registered.";
+
+  return `
+Historical data available: ${
+    studentProfile.hasHistoricalData
+      ? "Yes"
+      : "No"
+  }
+
+Evaluated practice data available: ${
+    studentProfile.hasEvaluatedData
+      ? "Yes"
+      : "No"
+  }
+
+Total practice sessions: ${
+    studentProfile.totalPracticeSessions ??
+    0
+  }
+
+Evaluated practices: ${
+    studentProfile.evaluatedPractices ??
+    0
+  }
+
+Average final score: ${formatMetric(
+    studentProfile.averageScore
+  )}
+
+Historical performance:
+- Accuracy: ${formatMetric(
+    performance.accuracy
+  )} (${skillLevels.accuracy || "unknown"})
+- Grammar: ${formatMetric(
+    performance.grammar
+  )} (${skillLevels.grammar || "unknown"})
+- Vocabulary: ${formatMetric(
+    performance.vocabulary
+  )} (${skillLevels.vocabulary || "unknown"})
+- Interaction: ${formatMetric(
+    performance.interaction
+  )} (${skillLevels.interaction || "unknown"})
+
+Recommended teaching difficulty:
+${
+  studentProfile.recommendedDifficulty ||
+  "beginner_standard"
+}
+
+Teaching priorities:
+${formattedPriorities}
+
+Most frequent errors:
+${formattedErrors}
+
+Previously learned vocabulary:
+${formattedVocabulary}
+`;
+}
+
 export function buildTutorPrompt({
   context = {},
   messages = [],
   latestMessage = "",
+  studentProfile = null,
 }) {
   const unitTitle =
     context?.unitTitle ??
@@ -75,6 +228,11 @@ export function buildTutorPrompt({
   const studentMessage =
     normalizeText(latestMessage);
 
+  const adaptiveProfile =
+    formatStudentProfile(
+      studentProfile
+    );
+
   return `
 You are LINGUAI UV, a friendly and intelligent English tutor for beginner university students.
 
@@ -102,6 +260,10 @@ ${
 LATEST STUDENT RESPONSE
 
 ${studentMessage}
+
+ADAPTIVE STUDENT PROFILE
+
+${adaptiveProfile}
 
 GENERAL BEHAVIOR
 
@@ -269,15 +431,77 @@ ACTIVITY-SPECIFIC RULES
 - correct past tense or continuous forms when they are incorrectly used for routines;
 - encourage frequency expressions when relevant, such as always, usually, sometimes, and never.
 
+ADAPTIVE TEACHING RULES
+
+52. Use the adaptive student profile to personalize the current response, but always prioritize the student's latest message and the current activity.
+
+53. If there is no evaluated historical data, use a standard supportive A1 teaching approach. Do not assume weaknesses without evidence.
+
+54. If recommendedDifficulty is "beginner_supported":
+- use shorter questions;
+- provide one example before asking the student to respond;
+- use familiar vocabulary;
+- correct only the most important errors;
+- give clear sentence starters when useful.
+
+55. If recommendedDifficulty is "beginner_standard":
+- use normal A1 questions;
+- provide brief explanations;
+- encourage complete sentences;
+- introduce one useful challenge at a time.
+
+56. If recommendedDifficulty is "beginner_challenging":
+- remain within A1 content;
+- ask for slightly longer answers;
+- include small variations or follow-up questions;
+- reduce unnecessary hints;
+- encourage the student to combine familiar structures.
+
+57. If grammar is marked as "needs_support":
+- reinforce the target grammar through short examples;
+- ask focused questions that require the relevant structure;
+- avoid introducing unrelated grammar.
+
+58. If vocabulary is marked as "needs_support":
+- reuse familiar vocabulary;
+- introduce no more than one or two useful new words in the turn;
+- provide a simple meaning or example when introducing a word.
+
+59. If interaction is marked as "needs_support":
+- encourage the student to answer with a complete sentence;
+- offer a sentence starter when necessary;
+- ask one clear question at a time.
+
+60. If accuracy is marked as "needs_support":
+- verify meaning before adding complexity;
+- provide a corrected model sentence;
+- ask the student to try a similar sentence.
+
+61. Pay special attention to frequentErrors, but only correct them when they appear again or when they are directly relevant to the current activity.
+
+62. Do not tell the student that the system has classified them as weak, strong, low-performing, or needing support.
+
+63. Do not expose internal scores, profile labels, error counts, or adaptive rules unless the interface explicitly asks for a progress report.
+
+64. Adapt naturally. The student should experience personalized teaching, not a technical evaluation report.
+
+65. Reuse previously learned vocabulary when relevant so the student can reinforce it.
+
+66. Do not force previously learned vocabulary into unrelated activities.
+
+67. If the student demonstrates improvement in a historically weak area, acknowledge the improvement briefly and continue with a slightly more demanding question.
+
+68. Historical information must guide the response, but it must never override clear evidence from the student's latest answer.
+
 OUTPUT RULES
 
-52. Return only the structured JSON response required by the response schema.
+69. Return only the structured JSON response required by the response schema.
 
-53. Do not include Markdown, code fences, comments, or explanatory text outside the structured response.
+70. Do not include Markdown, code fences, comments, or explanatory text outside the structured response.
 
-54. Ensure assistantReply, corrections, newWords, grammarStructures, score, performance, activityCompleted, and nextSuggestion are consistent with one another.
+71. Ensure assistantReply, corrections, newWords, grammarStructures, score, performance, activityCompleted, and nextSuggestion are consistent with one another.
 
-55. Before returning the response, perform this final verification:
+72. Before returning the response, perform this final verification:
 - assistantReply is complete;
 - important corrections are mentioned in assistantReply;
 - every important correction also appears in corrections;

@@ -32,7 +32,12 @@ import {
   savePracticeHistory,
   updatePracticeHistoryWithAI,
   finalizePracticeHistory,
+  getUserPracticeHistory,
 } from "../../services/practiceHistoryService";
+
+import {
+  buildAdaptiveStudentProfile,
+} from "../../utils/adaptiveProfileCalculations";
 
 
 export default function ChatPage() {
@@ -49,6 +54,16 @@ export default function ChatPage() {
   const [showLearningSummary, setShowLearningSummary] = useState(false);
   const [animatedAssistantText, setAnimatedAssistantText] = useState("");
   const [isAnimatingAssistant, setIsAnimatingAssistant] = useState(false);
+
+  const [
+    adaptiveStudentProfile,
+    setAdaptiveStudentProfile,
+  ] = useState(null);
+
+  const [
+    loadingAdaptiveProfile,
+    setLoadingAdaptiveProfile,
+  ] = useState(false);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -191,6 +206,51 @@ export default function ChatPage() {
     user?.uid,
   ]);
 
+  useEffect(() => {
+    const loadAdaptiveProfile = async () => {
+      if (!user?.uid) {
+        setAdaptiveStudentProfile(null);
+        return;
+      }
+
+      try {
+        setLoadingAdaptiveProfile(true);
+
+        const history =
+          await getUserPracticeHistory(
+            user.uid
+          );
+
+        const studentProfile =
+          buildAdaptiveStudentProfile(
+            Array.isArray(history)
+              ? history
+              : []
+          );
+
+        setAdaptiveStudentProfile(
+          studentProfile
+        );
+
+        console.log(
+          "Adaptive student profile:",
+          studentProfile
+        );
+      } catch (error) {
+        console.error(
+          "Error loading adaptive student profile:",
+          error
+        );
+
+        setAdaptiveStudentProfile(null);
+      } finally {
+        setLoadingAdaptiveProfile(false);
+      }
+    };
+
+    loadAdaptiveProfile();
+  }, [user?.uid]);
+
   const animateAssistantReply = (text) => {
     return new Promise((resolve) => {
       if (!text) {
@@ -276,6 +336,7 @@ export default function ChatPage() {
         },
 
         difficulty: "Beginner",
+        studentProfile: adaptiveStudentProfile,
 
         // El último mensaje se envía por separado como userMessage.
         recentMessages: updatedConversation.messages
@@ -571,6 +632,36 @@ export default function ChatPage() {
   };
 
 
+  const refreshAdaptiveProfile =
+    async () => {
+      if (!user?.uid) {
+        return;
+      }
+
+      try {
+        const history =
+          await getUserPracticeHistory(
+            user.uid
+          );
+
+        const updatedProfile =
+          buildAdaptiveStudentProfile(
+            Array.isArray(history)
+              ? history
+              : []
+          );
+
+        setAdaptiveStudentProfile(
+          updatedProfile
+        );
+      } catch (error) {
+        console.error(
+          "Error refreshing adaptive student profile:",
+          error
+        );
+      }
+    };
+
   const handleChangeContext = async (newContext) => {
     if (!newContext || isAssistantTyping) {
       return;
@@ -594,6 +685,8 @@ export default function ChatPage() {
         await finalizePracticeHistory(
           conversation.practiceHistoryId
         );
+
+        await refreshAdaptiveProfile();
       }
 
       const initialTutorMessage = createMessage({

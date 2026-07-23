@@ -501,6 +501,7 @@ export const generateTutorResponse =
     context = {},
     messages = [],
     latestMessage = "",
+    studentProfile = null,
   }) => {
     const normalizedLatestMessage =
       normalizeString(
@@ -519,6 +520,7 @@ export const generateTutorResponse =
         messages,
         latestMessage:
           normalizedLatestMessage,
+        studentProfile,
       });
 
     try {
