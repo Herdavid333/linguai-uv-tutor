@@ -123,6 +123,8 @@ const getActivityResult = (
         latestScore
       )}%`,
     };
+
+  
   }
 
   return {

@@ -2,6 +2,7 @@ import {
   addDoc,
   arrayUnion,
   collection,
+  limit,
   doc,
   getDoc,
   getDocs,
@@ -15,6 +16,11 @@ import {
 
 import { db } from "../lib/firebase";
 
+import {
+  PRACTICE_STATUS,
+  EVALUATION_STATUS,
+} from "../constants/practiceHistory";
+
 /*
  * Cantidad mínima de intervenciones significativas del estudiante
  * para que una práctica pueda evaluarse.
@@ -25,6 +31,26 @@ const MIN_MEANINGFUL_INTERACTIONS = 5;
    FUNCIONES AUXILIARES
 ========================================================= */
 
+const getPracticeCollectionRef = () => {
+  return collection(
+    db,
+    "practiceHistory"
+  );
+};
+
+const getPracticeDocumentRef = (practiceId) => {
+  if (!practiceId) {
+    throw new Error(
+      "practice-history-id-required"
+    );
+  }
+
+  return doc(
+    db,
+    "practiceHistory",
+    practiceId
+  );
+};
 /**
  * Limita una métrica numérica al rango de 0 a 100.
  *
@@ -177,7 +203,7 @@ export const createPracticeHistoryItem = ({
   activityType,
   activityName,
 
-  status = "in_progress",
+  status = PRACTICE_STATUS.IN_PROGRESS,
 }) => {
   if (!userId) {
     throw new Error("user-id-required");
@@ -207,12 +233,14 @@ export const createPracticeHistoryItem = ({
      */
     scoreHistory: [],
 
+    messages: [],
+
     /*
      * finalScore únicamente se calcula al cerrar la práctica.
      */
     finalScore: null,
 
-    evaluationStatus: "pending",
+    evaluationStatus: EVALUATION_STATUS.PENDING,
 
     performance: {
       accuracy: null,
@@ -269,7 +297,7 @@ export const savePracticeHistory = async (
   }
 
   const docRef = await addDoc(
-    collection(db, "practiceHistory"),
+    getPracticeCollectionRef(),
     {
       ...historyItem,
 
@@ -294,6 +322,7 @@ export const updatePracticeHistoryWithAI = async ({
   practiceHistoryId,
   aiResponse,
   studentMessage,
+  messages = [],
 }) => {
   if (!practiceHistoryId) {
     throw new Error(
@@ -309,6 +338,28 @@ export const updatePracticeHistoryWithAI = async ({
 
   const normalizedStudentMessage =
     normalizeText(studentMessage);
+
+  const normalizedMessages =
+    Array.isArray(messages)
+      ? messages
+          .filter(
+            (message) =>
+              message &&
+              typeof message.content ===
+                "string" &&
+              message.content.trim()
+          )
+          .map((message) => ({
+            id: message.id || "",
+            role: message.role,
+            content:
+              message.content.trim(),
+            createdAt:
+              message.createdAt ||
+              Date.now(),
+          }))
+          .slice(-40)
+      : [];
 
   const meaningfulInteraction =
     isMeaningfulStudentMessage(
@@ -342,9 +393,8 @@ export const updatePracticeHistoryWithAI = async ({
       aiResponse.performance
     );
 
-  const practiceRef = doc(
-    db,
-    "practiceHistory",
+  const practiceRef =
+    getPracticeDocumentRef(
     practiceHistoryId
   );
 
@@ -362,7 +412,7 @@ export const updatePracticeHistoryWithAI = async ({
 
   if (
     currentPractice.status ===
-    "completed"
+    PRACTICE_STATUS.COMPLETED
   ) {
     throw new Error(
       "practice-already-completed"
@@ -373,6 +423,8 @@ export const updatePracticeHistoryWithAI = async ({
     new Date().toISOString();
 
   const updateData = {
+    messages: normalizedMessages,
+
     lastStudentMessage:
       normalizedStudentMessage,
 
@@ -398,8 +450,9 @@ export const updatePracticeHistoryWithAI = async ({
     assistantMessagesCount:
       increment(1),
 
-    status: "in_progress",
+    status: PRACTICE_STATUS.IN_PROGRESS,
     updatedAt: serverTimestamp(),
+    
   };
 
   if (meaningfulInteraction) {
@@ -622,9 +675,8 @@ export const finalizePracticeHistory = async (
     );
   }
 
-  const practiceRef = doc(
-    db,
-    "practiceHistory",
+  const practiceRef =
+    getPracticeDocumentRef(
     practiceHistoryId
   );
 
@@ -813,32 +865,160 @@ export const finalizePracticeHistory = async (
 ========================================================= */
 
 export const getPracticeHistoryById =
-  async (practiceHistoryId) => {
-    if (!practiceHistoryId) {
+  async (
+    practiceId,
+    userId = null
+  ) => {
+    if (!userId || !practiceId) {
       return null;
     }
 
-    const practiceRef = doc(
-      db,
-      "practiceHistory",
-      practiceHistoryId
-    );
+    const practiceRef =
+      getPracticeDocumentRef(
+        practiceId
+      );
 
-    const practiceSnapshot =
+    const snapshot =
       await getDoc(practiceRef);
 
+    if (!snapshot.exists()) {
+      return null;
+    }
+
+    const practice = {
+      id: snapshot.id,
+      ...snapshot.data(),
+    };
+
+    /*
+     * Validación opcional de propiedad.
+     * Evita que un usuario abra una
+     * práctica perteneciente a otro.
+     */
     if (
-      !practiceSnapshot.exists()
+      practice.userId !== userId
     ) {
       return null;
     }
 
+    return practice;
+  };
+
+
+export const getActivePractice =
+  async (userId) => {
+    if (!userId) {
+      return null;
+    }
+
+    const activePracticeQuery =
+      query(
+        getPracticeCollectionRef(),
+
+        where(
+          "userId",
+          "==",
+          userId
+        ),
+
+        where(
+          "status",
+          "==",
+          PRACTICE_STATUS.IN_PROGRESS
+        ),
+
+        orderBy(
+          "updatedAt",
+          "desc"
+        ),
+
+        limit(1)
+      );
+
+    const snapshot =
+      await getDocs(
+        activePracticeQuery
+      );
+
+    if (snapshot.empty) {
+      return null;
+    }
+
+    const activeDocument =
+      snapshot.docs[0];
+
     return {
-      id: practiceSnapshot.id,
-      ...practiceSnapshot.data(),
+      id: activeDocument.id,
+      ...activeDocument.data(),
     };
   };
 
+
+export const abandonPracticeHistory =
+  async ({
+    userId,
+    practiceId,
+  }) => {
+    if (!userId || !practiceId) {
+      throw new Error(
+        "User ID and practice ID are required."
+      );
+    }
+
+    const practiceRef =
+      getPracticeDocumentRef(
+        practiceId
+      );
+
+    const practiceSnapshot =
+      await getDoc(practiceRef);
+
+    if (!practiceSnapshot.exists()) {
+      throw new Error(
+        "practice-history-not-found"
+      );
+    }
+
+    const practice =
+      practiceSnapshot.data();
+
+    if (
+      practice.userId !== userId
+    ) {
+      throw new Error(
+        "practice-access-denied"
+      );
+    }
+
+    await updateDoc(
+      practiceRef,
+      {
+        status:
+          PRACTICE_STATUS.ABANDONED,
+
+        evaluationStatus:
+          EVALUATION_STATUS.NOT_EVALUATED,
+
+        activityCompleted: false,
+
+        abandonedAt:
+          serverTimestamp(),
+
+        updatedAt:
+          serverTimestamp(),
+      }
+    );
+
+    return {
+      id: practiceId,
+
+      status:
+        PRACTICE_STATUS.ABANDONED,
+
+      evaluationStatus:
+        EVALUATION_STATUS.NOT_EVALUATED,
+    };
+  };
 /* =========================================================
    CONSULTAR HISTORIAL POR USUARIO
 ========================================================= */
@@ -850,10 +1030,7 @@ export const getUserPracticeHistory =
     }
 
     const historyQuery = query(
-      collection(
-        db,
-        "practiceHistory"
-      ),
+      getPracticeCollectionRef(),
 
       where(
         "userId",

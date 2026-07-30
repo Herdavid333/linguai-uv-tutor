@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BarChart3, User, Bot } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { useAuth } from "../../context/AuthContext";
 
@@ -18,9 +18,17 @@ import PasswordRequirements from "../../components/auth/PasswordRequirements.jsx
 import AuthButton from "../../components/auth/AuthButton.jsx";
 
 import {
+  getActivePractice,
+  abandonPracticeHistory,
+} from "../../services/practiceHistoryService";
+
+import {
   createNewConversation,
   saveConversation,
 } from "../../utils/chatModel";
+
+import ActivePracticeModal
+  from "../../components/practice/ActivePracticeModal.js";
 
 export default function HomePage() {
   /* =========================================================
@@ -37,6 +45,156 @@ export default function HomePage() {
 
   const [showTopicModal, setShowTopicModal] = useState(false);
   const [showActivityModal, setShowActivityModal] = useState(false);
+
+  const [
+    activePractice,
+    setActivePractice,
+  ] = useState(null);
+
+  const [
+    loadingActivePractice,
+    setLoadingActivePractice,
+  ] = useState(true);
+
+  const [
+    selectedNewActivity,
+    setSelectedNewActivity,
+  ] = useState(null);
+
+  const [
+    showActivePracticeModal,
+    setShowActivePracticeModal,
+  ] = useState(false);
+
+  const [
+    isChangingPractice,
+    setIsChangingPractice,
+  ] = useState(false);
+
+  const [
+    isAbandoning,
+    setIsAbandoning,
+  ] = useState(false);
+
+  const buildChatUrl = (
+    activityContext
+  ) => {
+    const params =
+      new URLSearchParams({
+        unitId:
+          activityContext.unitId,
+
+        topicId:
+          activityContext.topicId,
+
+        activityId:
+          activityContext.activityId,
+
+        activityType:
+          activityContext.activityType,
+
+        unitTitle:
+          activityContext.unitTitle,
+
+        topicTitle:
+          activityContext.topicTitle,
+
+        activityName:
+          activityContext.activityName,
+      });
+
+    return `/chat?${params.toString()}`;
+  };
+
+  const hasActivePractice =
+    Boolean(
+      activePractice?.id &&
+      activePractice?.status ===
+        "in_progress"
+    );
+
+  const activePracticeProgress =
+    Math.min(
+      100,
+      Math.max(
+        0,
+        Number(
+          activePractice
+            ?.progressPercentage ??
+          activePractice
+            ?.completionPercentage ??
+          0
+        )
+      )
+    );
+
+  useEffect(() => {
+
+    let cancelled = false;
+
+    const loadActivePractice =
+      async () => {
+        if (!user?.uid) {
+          if (!cancelled) {
+            setActivePractice(null);
+            setLoadingActivePractice(false);
+          }
+          return;
+        }
+
+        try {
+          setLoadingActivePractice(true);
+
+          const practice =
+            await getActivePractice(user.uid);
+
+
+          if (cancelled) {
+            return;
+          }
+          /*
+          * Aunque el servicio ya filtra por
+          * status === "in_progress", se valida
+          * nuevamente en la interfaz.
+          */
+          if (practice?.id && practice.status !== "in_progress") {
+            setActivePractice(practice);
+          }else {
+            setActivePractice(null);
+          }
+        } catch (error) {
+          console.error(
+            "Error loading active practice:",
+            error
+          );
+          
+          if (!cancelled) {
+            setActivePractice(null);
+          }
+        } finally {
+          if (!cancelled) {
+            setLoadingActivePractice(false);
+          }
+        }
+      };
+
+    loadActivePractice();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.uid]);
+
+  const handleContinuePractice =
+    () => {
+      if (!activePractice?.id) {
+        return;
+      }
+
+      router.push(
+        `/chat?practiceId=${activePractice.id}`
+      );
+    };
 
   /* =========================================================
      DATOS DEL USUARIO
@@ -77,44 +235,171 @@ export default function HomePage() {
      SELECCIÓN DE ACTIVIDAD
      CREACIÓN DE CONTEXTO CONVERSACIONAL
   ========================================================= */
-  const handleSelectActivity = (activity) => {
-    if (!selectedUnit || !selectedTopic || !activity) {
-      console.error("Missing conversation context", {
-        selectedUnit,
-        selectedTopic,
-        activity,
-      });
+  const handleSelectActivity =
+    async (activityContext) => {
+      if (!user?.uid) {
+        return;
+      }
 
-      return;
-    }
+      try {
+        const currentPractice =
+          await getActivePractice(
+            user.uid
+          );
 
-    /* =========================================================
-       CONTEXTO DE LA CONVERSACIÓN
-    ========================================================= */
-    const context = {
-      unitId: selectedUnit.id,
-      unitTitle: selectedUnit.title,
+        if (currentPractice) {
+          setActivePractice(
+            currentPractice
+          );
 
-      topicId: selectedTopic.id,
-      topicTitle: selectedTopic.title,
+          setSelectedNewActivity(
+            activityContext
+          );
 
-      activityType: activity.type,
-      activityName: activity.name,
-      activityDescription: activity.description,
+          setShowActivePracticeModal(
+            true
+          );
+
+          return;
+        }
+
+        router.push(
+          buildChatUrl(
+            activityContext
+          )
+        );
+      } catch (error) {
+        console.error(
+          "Error checking active practice:",
+          error
+        );
+      }
     };
 
-    /* =========================================================
-       CREACIÓN Y GUARDADO DE CONVERSACIÓN
-    ========================================================= */
-    const newConversation = createNewConversation(context);
+  const handleContinueExisting =
+    () => {
+      if (!activePractice?.id) {
+        return;
+      }
 
-    saveConversation(newConversation);
+      setShowActivePracticeModal(
+        false
+      );
 
-    /* =========================================================
-       REDIRECCIÓN AL CHAT
-    ========================================================= */
-    router.push("/chat");
-  };
+      router.push(
+        `/chat?practiceId=${activePractice.id}`
+      );
+    };
+
+  const handleAbandonAndStart =
+    async () => {
+      if (
+        !user?.uid ||
+        !activePractice?.id ||
+        !selectedNewActivity
+      ) {
+        return;
+      }
+
+      try {
+        setIsAbandoning(true);
+
+        await abandonPracticeHistory({
+          userId: user.uid,
+          practiceId:
+            activePractice.id,
+        });
+
+        const newActivity =
+          selectedNewActivity;
+
+        setActivePractice(null);
+        setSelectedNewActivity(null);
+        setShowActivePracticeModal(
+          false
+        );
+
+        router.push(
+          buildChatUrl(newActivity)
+        );
+      } catch (error) {
+        console.error(
+          "Error abandoning practice:",
+          error
+        );
+      } finally {
+        setIsAbandoning(false);
+      }
+    };
+
+  const handleContinueCurrentPractice =
+    () => {
+      if (!activePractice?.id) {
+        return;
+      }
+
+      const practiceId =
+        activePractice.id;
+
+      setShowActivePracticeModal(
+        false
+      );
+
+      setShowActivityModal(false);
+      setSelectedNewActivity(null);
+
+      router.push(
+        `/chat?practiceId=${encodeURIComponent(
+          practiceId
+        )}`
+      );
+    };
+
+  const handleAbandonAndChange =
+    async () => {
+      if (
+        isChangingPractice ||
+        !user?.uid ||
+        !activePractice?.id ||
+        !selectedNewActivity
+      ) {
+        return;
+      }
+
+      try {
+        setIsChangingPractice(true);
+
+        const newActivity =
+          selectedNewActivity;
+
+        await abandonPracticeHistory({
+          userId: user.uid,
+          practiceId:
+            activePractice.id,
+        });
+
+        setShowActivePracticeModal(
+          false
+        );
+
+        setShowActivityModal(false);
+        setActivePractice(null);
+        setSelectedNewActivity(null);
+
+        router.push(
+          buildChatUrl(
+            newActivity
+          )
+        );
+      } catch (error) {
+        console.error(
+          "Error abandoning practice:",
+          error
+        );
+      } finally {
+        setIsChangingPractice(false);
+      }
+    };
 
   return (
     <>
@@ -210,47 +495,102 @@ export default function HomePage() {
           </section>
 
           {/* =========================================================
-             CONTINUAR ÚLTIMA ACTIVIDAD
+            PRÁCTICA ACTIVA O INVITACIÓN A COMENZAR
           ========================================================= */}
-          <section className="px-4 py-3">
-            
-            {/* Título */}
-            <h3 className="text-[18px] font-extrabold text-black">
-              Continue where you left off?
-            </h3>
-
-            {/* Contenido */}
-            <div className="mt-2 grid grid-cols-[1fr_auto] gap-3 items-center">
-              
-              {/* Información de progreso */}
-              <div>
-                <p className="text-[14px] font-semibold text-black">
-                  Unit 1 - Greetings and Introductions
-                </p>
-
-                <p className="text-[13px] text-black">
-                  80% completed
-                </p>
-
-                {/* Barra de progreso */}
-                <div className="mt-1 h-3 w-full rounded-full bg-gray-200 overflow-hidden">
-                  <div className="h-full w-[80%] bg-red-600 rounded-full" />
-                </div>
-
-                {/* Tema actual */}
-                <p className="mt-1 text-[12px] font-bold text-red-600">
-                  Introducing yourself
+          {loadingActivePractice ? (
+            <section className="px-4 py-3">
+              <div className="min-h-[92px] flex items-center justify-center rounded-[6px] bg-[#f5f5f5]">
+                <p className="text-[13px] font-semibold text-gray-600">
+                  Loading your practice...
                 </p>
               </div>
+            </section>
+          ) : hasActivePractice ? (
+            <section className="px-4 py-3">
+              {/* Título */}
+              <h3 className="text-[18px] font-extrabold text-black">
+                Continue where you left off?
+              </h3>
 
-              {/* Botón continuar */}
-              <AuthButton
-                className="px-3 py-1 text-[20px] w-auto"
-              >
-                Continue here
-              </AuthButton>
-            </div>
-          </section>
+              {/* Información de la práctica */}
+              <div className="mt-2 grid grid-cols-[1fr_auto] items-center gap-3">
+                <div className="min-w-0">
+                  {/* Unidad */}
+                  <p className="truncate text-[14px] font-semibold text-black">
+                    {activePractice.unitTitle ||
+                      "Current unit"}
+                  </p>
+
+                  {/* Porcentaje */}
+                  <p className="text-[13px] text-black">
+                    {activePracticeProgress}%
+                    {" "}completed
+                  </p>
+
+                  {/* Barra de progreso */}
+                  <div className="mt-1 h-3 w-full overflow-hidden rounded-full bg-gray-200">
+                    <div
+                      className="h-full rounded-full bg-red-600 transition-[width] duration-300"
+                      style={{
+                        width: `${activePracticeProgress}%`,
+                      }}
+                    />
+                  </div>
+
+                  {/* Tema y actividad */}
+                  <p className="mt-1 truncate text-[12px] font-bold text-red-600">
+                    {activePractice.topicTitle ||
+                      activePractice.activityName ||
+                      "English practice"}
+                  </p>
+
+                  {activePractice.topicTitle &&
+                    activePractice.activityName && (
+                      <p className="truncate text-[11px] font-semibold text-gray-600">
+                        {activePractice.activityName}
+                      </p>
+                    )}
+                </div>
+
+                {/* Botón para retomar */}
+                <button
+                  type="button"
+                  onClick={
+                    handleContinuePractice
+                  }
+                  aria-label="Continue active practice"
+                  className="
+                    whitespace-nowrap
+                    rounded-[5px]
+                    px-2
+                    py-2
+                    text-[13px]
+                    font-bold
+                    text-black
+                    transition
+                    hover:bg-gray-100
+                    active:scale-95
+                  "
+                >
+                  Continue Here
+                </button>
+              </div>
+            </section>
+          ) : (
+            <section className="px-4 py-3">
+              <div className="rounded-[7px] border border-gray-300 bg-[#f7f7f7] px-3 py-3">
+                <h3 className="text-[17px] font-extrabold text-black">
+                  Ready for a new practice?
+                </h3>
+
+                <p className="mt-1 text-[13px] font-semibold leading-snug text-gray-700">
+                  Choose a unit, topic and
+                  activity below to start
+                  learning.
+                </p>
+              </div>
+            </section>
+          )}
 
           {/* =========================================================
              LISTA DE UNIDADES DEL CURSO
@@ -372,6 +712,40 @@ export default function HomePage() {
           onSelectActivity={handleSelectActivity}
         />
       )}
+
+      {/* =========================================================
+        MODAL DE PRÁCTICA ACTIVA
+      ========================================================= */}
+      <ActivePracticeModal
+        isOpen={
+          showActivePracticeModal
+        }
+        activePractice={
+          activePractice
+        }
+        isProcessing={
+          isChangingPractice
+        }
+        onContinue={
+          handleContinueCurrentPractice
+        }
+        onAbandon={
+          handleAbandonAndChange
+        }
+        onClose={() => {
+          if (isChangingPractice) {
+            return;
+          }
+
+          setShowActivePracticeModal(
+            false
+          );
+
+          setSelectedNewActivity(
+            null
+          );
+        }}
+      />
     </>
   );
 }
