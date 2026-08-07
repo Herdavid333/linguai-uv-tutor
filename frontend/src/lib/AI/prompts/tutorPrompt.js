@@ -43,9 +43,7 @@ function formatStudentProfile(
   ) {
     return `
 No historical student profile is available yet.
-
-Use a standard supportive A1 teaching approach.
-`;
+Use a standard supportive A1 teaching approach.`;
   }
 
   const performance =
@@ -60,6 +58,13 @@ Use a standard supportive A1 teaching approach.
     typeof studentProfile.skillLevels ===
       "object"
       ? studentProfile.skillLevels
+      : {};
+
+  const adaptation =
+    studentProfile?.adaptation &&
+    typeof studentProfile.adaptation ===
+      "object"
+      ? studentProfile.adaptation
       : {};
 
   const priorities =
@@ -104,17 +109,24 @@ Use a standard supportive A1 teaching approach.
   const formattedErrors =
     frequentErrors.length > 0
       ? frequentErrors
-          .map(
-            (error, index) =>
-              `${index + 1}. ${
-                error?.label ||
-                "Unspecified error"
-              } | Type: ${
-                error?.type || "other"
-              } | Repeated: ${
-                error?.occurrences || 1
-              } times`
-          )
+          .slice(0, 5)
+          .map((error, index) => {
+            const wrong =
+              error?.wrong ||
+              "Unspecified error";
+
+            const correct =
+              error?.correct ||
+              "Not specified";
+
+            return `${index + 1}. "${wrong}" → "${correct}" |
+  Type: ${error?.type || "other"} |
+  Repeated: ${error?.occurrences || 1} times${
+              error?.explanation
+                ? ` | Explanation: ${error.explanation}`
+                : ""
+            }`;
+          })
           .join("\n")
       : "No recurring errors registered.";
 
@@ -129,61 +141,224 @@ Use a standard supportive A1 teaching approach.
       : "No vocabulary registered.";
 
   return `
-Historical data available: ${
+  STUDENT HISTORICAL PROFILE
+
+  Historical data available: ${
     studentProfile.hasHistoricalData
       ? "Yes"
       : "No"
   }
 
-Evaluated practice data available: ${
+  Evaluated practice data available: ${
     studentProfile.hasEvaluatedData
       ? "Yes"
       : "No"
   }
 
-Total practice sessions: ${
-    studentProfile.totalPracticeSessions ??
-    0
+  Practice history:
+  - Total practice sessions: ${
+    studentProfile.totalPracticeSessions ?? 0
+  }
+  - Completed practices: ${
+    studentProfile.completedPractices ?? 0
+  }
+  - Evaluated practices: ${
+    studentProfile.evaluatedPractices ?? 0
   }
 
-Evaluated practices: ${
-    studentProfile.evaluatedPractices ??
-    0
-  }
-
-Average final score: ${formatMetric(
+  Average final score: ${formatMetric(
     studentProfile.averageScore
   )}
 
-Historical performance:
-- Accuracy: ${formatMetric(
+  Historical performance:
+  - Accuracy: ${formatMetric(
     performance.accuracy
   )} (${skillLevels.accuracy || "unknown"})
-- Grammar: ${formatMetric(
+  - Grammar: ${formatMetric(
     performance.grammar
   )} (${skillLevels.grammar || "unknown"})
-- Vocabulary: ${formatMetric(
+  - Vocabulary: ${formatMetric(
     performance.vocabulary
   )} (${skillLevels.vocabulary || "unknown"})
-- Interaction: ${formatMetric(
+  - Interaction: ${formatMetric(
     performance.interaction
   )} (${skillLevels.interaction || "unknown"})
 
-Recommended teaching difficulty:
-${
-  studentProfile.recommendedDifficulty ||
-  "beginner_standard"
+  Recommended teaching difficulty: ${
+    studentProfile.recommendedDifficulty ||
+    "beginner_standard"
+  }
+
+  Adaptive teaching strategy:
+  - Correction intensity: ${
+    adaptation.correctionIntensity ||
+    "balanced"
+  }
+  - Question style: ${
+    adaptation.questionStyle ||
+    "guided_open"
+  }
+  - Response length: ${
+    adaptation.responseLength ||
+    "short_complete"
+  }
+  - Scaffolding level: ${
+    adaptation.scaffoldingLevel ||
+    "medium"
+  }
+
+  Teaching priorities:
+  ${formattedPriorities}
+
+  Most frequent errors:
+  ${formattedErrors}
+
+  Previously learned vocabulary:
+  ${formattedVocabulary}
+  `;
 }
 
-Teaching priorities:
-${formattedPriorities}
+function formatPersonalizedFeedbackRules(
+  studentProfile
+) {
+  const strategy =
+    studentProfile
+      ?.feedbackStrategy;
 
-Most frequent errors:
-${formattedErrors}
+  if (
+    !strategy ||
+    typeof strategy !==
+      "object"
+  ) {
+    return `
+PERSONALIZED FEEDBACK MODE
 
-Previously learned vocabulary:
-${formattedVocabulary}
+No reliable evaluated history is available yet.
+
+- Observe the latest student response before adapting.
+- Give one specific positive comment.
+- Correct only one meaningful error.
+- Use simple A1-friendly explanations.
+- Ask one clear follow-up question.
 `;
+  }
+
+  const rules = [
+    "PERSONALIZED FEEDBACK MODE",
+    "",
+    `Reliable historical evidence: ${
+      strategy.hasReliableHistory
+        ? "Yes"
+        : "No"
+    }.`,
+
+    `Weakest historical skill: ${
+      strategy.weakestSkill ||
+      "Not identified"
+    }.`,
+
+    `Strongest historical skill: ${
+      strategy.strongestSkill ||
+      "Not identified"
+    }.`,
+
+    `Correction mode: ${
+      strategy.correctionMode ||
+      "balanced"
+    }.`,
+
+    `Interaction support: ${
+      strategy.interactionSupport ||
+      "standard"
+    }.`,
+    "",
+    "MANDATORY PERSONALIZED FEEDBACK RULES",
+    "",
+    "1. Begin by acknowledging something specific the student did in the latest response.",
+    "2. Do not use generic praise such as only 'Good job' or 'Great answer'. State what was good.",
+    `3. Include no more than ${
+      strategy.maximumCorrectionsPerTurn ??
+      1
+    } important correction(s) in assistantReply.`,
+    "4. Prioritize errors connected to the current lesson objective.",
+    "5. Historical weaknesses are supporting context, not automatic errors.",
+    "6. Never claim that the student made a historical error in the latest message unless it actually appears.",
+    "7. Keep explanations short and suitable for an A1 university student.",
+  ];
+
+  if (
+    strategy.correctionMode ===
+    "guided"
+  ) {
+    rules.push(
+      "8. When correcting an important error, show the corrected model and invite the student to use it again.",
+      "9. Give a sentence starter when the learner appears unsure."
+    );
+  }
+
+  if (
+    strategy.correctionMode ===
+    "selective"
+  ) {
+    rules.push(
+      "8. Correct only errors that affect meaning or the target structure.",
+      "9. Prioritize fluency and independent production."
+    );
+  }
+
+  if (
+    strategy.interactionSupport ===
+    "high"
+  ) {
+    rules.push(
+      "10. Ask one concrete question at a time.",
+      "11. When helpful, provide a short answer starter or two simple options."
+    );
+  }
+
+  if (
+    strategy.interactionSupport ===
+    "low"
+  ) {
+    rules.push(
+      "10. Ask a guided open question.",
+      "11. Encourage the student to add a reason, example, or extra detail."
+    );
+  }
+
+  const recurringTargets =
+    Array.isArray(
+      strategy.recurringTargets
+    )
+      ? strategy.recurringTargets
+      : [];
+
+  if (
+    recurringTargets.length > 0
+  ) {
+    rules.push(
+      "",
+      "RECURRING LEARNING TARGETS"
+    );
+
+    recurringTargets.forEach(
+      (target, index) => {
+        rules.push(
+          `${index + 1}. ${
+            target.wrong
+          } → ${
+            target.correct
+          } (${target.occurrences} recorded occurrences).`
+        );
+      }
+    );
+
+    rules.push(
+      "Use these targets only when relevant to the latest response or current activity."
+    );
+  }
+
+  return rules.join("\n");
 }
 
 export function buildTutorPrompt({
@@ -232,6 +407,11 @@ export function buildTutorPrompt({
     formatStudentProfile(
       studentProfile
     );
+  
+  const personalizedFeedbackRules =
+    formatPersonalizedFeedbackRules(
+      studentProfile
+    );
 
   return `
 You are LINGUAI UV, a friendly and intelligent English tutor for beginner university students.
@@ -264,6 +444,8 @@ ${studentMessage}
 ADAPTIVE STUDENT PROFILE
 
 ${adaptiveProfile}
+
+${personalizedFeedbackRules}
 
 GENERAL BEHAVIOR
 
@@ -493,15 +675,66 @@ ADAPTIVE TEACHING RULES
 
 68. Historical information must guide the response, but it must never override clear evidence from the student's latest answer.
 
+69. Apply correctionIntensity as follows:
+
+- "guided":
+  Correct one or two important errors, show a corrected model, and invite the student to reuse the structure.
+
+- "balanced":
+  Correct the most useful error while maintaining the natural flow of the conversation.
+
+- "selective":
+  Correct only errors that affect meaning or the grammar objective. Prioritize fluency and independence.
+
+70. Apply scaffoldingLevel as follows:
+
+- "high":
+  Use sentence starters, short examples, two-option choices, and one task per turn.
+
+- "medium":
+  Provide an example or hint only when the student appears confused or hesitant.
+
+- "low":
+  Reduce hints and encourage independent, complete answers.
+
+71. Apply questionStyle as follows:
+
+- "closed_with_examples":
+  Ask concrete questions and provide a sentence starter or two simple options when useful.
+
+- "guided_open":
+  Ask one open but clearly guided A1 question.
+
+- "open_guided":
+  Ask for an additional detail, example, or simple reason while remaining within A1.
+
+72. Apply responseLength as follows:
+
+- "very_short":
+  Use approximately 2 or 3 short sentences.
+
+- "short":
+  Use approximately 3 or 4 short sentences.
+
+- "short_complete":
+  Use no more than 5 short sentences unless a complete exercise requires slightly more text.
+
+73. If recommendedDifficulty is "pre_intermediate_transition":
+- remain aligned with the course content;
+- provide minimal scaffolding;
+- encourage longer and more independent answers;
+- ask for a simple reason or additional detail;
+- do not introduce grammar far beyond the current course objective.
+
 OUTPUT RULES
 
-69. Return only the structured JSON response required by the response schema.
+74. Return only the structured JSON response required by the response schema.
 
-70. Do not include Markdown, code fences, comments, or explanatory text outside the structured response.
+75. Do not include Markdown, code fences, comments, or explanatory text outside the structured response.
 
-71. Ensure assistantReply, corrections, newWords, grammarStructures, score, performance, activityCompleted, and nextSuggestion are consistent with one another.
+76. Ensure assistantReply, corrections, newWords, grammarStructures, score, performance, activityCompleted, and nextSuggestion are consistent with one another.
 
-72. Before returning the response, perform this final verification:
+77. Before returning the response, perform this final verification:
 - assistantReply is complete;
 - important corrections are mentioned in assistantReply;
 - every important correction also appears in corrections;
@@ -509,5 +742,21 @@ OUTPUT RULES
 - newWords does not duplicate spelling corrections unnecessarily;
 - grammarStructures contains only structures actually relevant to the response;
 - the final question or instruction is clear.
+
+FEEDBACK OBJECT RULES
+
+1. feedback.overall must describe the quality of the latest student response specifically.
+
+2. feedback.strengths must contain only strengths demonstrated in the latest response.
+
+3. feedback.improvements must contain one or two clear actions the student can apply immediately.
+
+4. Do not write generic strengths such as "Good participation" unless supported by the response.
+
+5. Do not mention numerical scores inside feedback.
+
+6. When the latest response contains an important error, feedback.improvements should explain what the student should practice next.
+
+7. When the response is correct, feedback.improvements may suggest adding detail, vocabulary, or a longer sentence instead of inventing an error.
 `;
 }

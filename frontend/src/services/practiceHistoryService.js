@@ -289,30 +289,40 @@ export const createPracticeHistoryItem = ({
    GUARDAR UNA NUEVA SESIÓN
 ========================================================= */
 
-export const savePracticeHistory = async (
-  historyItem
-) => {
-  if (!historyItem?.userId) {
-    throw new Error("user-id-required");
-  }
-
-  const docRef = await addDoc(
-    getPracticeCollectionRef(),
-    {
-      ...historyItem,
-
-      status:
-        historyItem.status ||
-        "in_progress",
-
-      startedAt: serverTimestamp(),
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+export const savePracticeHistory =
+  async (historyItem) => {
+    if (!historyItem?.userId) {
+      throw new Error(
+        "user-id-required"
+      );
     }
-  );
 
-  return docRef.id;
-};
+    const docRef =
+      await addDoc(
+        collection(
+          db,
+          "practiceHistory"
+        ),
+        {
+          ...historyItem,
+
+          status:
+            historyItem.status ||
+            "in_progress",
+
+          startedAt:
+            serverTimestamp(),
+
+          createdAt:
+            serverTimestamp(),
+
+          updatedAt:
+            serverTimestamp(),
+        }
+      );
+
+    return docRef.id;
+  };
 
 /* =========================================================
    ACTUALIZAR SESIÓN CON RESPUESTA PEDAGÓGICA DE GEMINI
@@ -913,7 +923,10 @@ export const getActivePractice =
 
     const activePracticeQuery =
       query(
-        getPracticeCollectionRef(),
+        collection(
+          db,
+          "practiceHistory"
+        ),
 
         where(
           "userId",
@@ -924,15 +937,8 @@ export const getActivePractice =
         where(
           "status",
           "==",
-          PRACTICE_STATUS.IN_PROGRESS
-        ),
-
-        orderBy(
-          "updatedAt",
-          "desc"
-        ),
-
-        limit(1)
+          "in_progress"
+        )
       );
 
     const snapshot =
@@ -941,16 +947,77 @@ export const getActivePractice =
       );
 
     if (snapshot.empty) {
+      console.log(
+        "No active practice found for:",
+        userId
+      );
+
       return null;
     }
 
-    const activeDocument =
-      snapshot.docs[0];
+    const practices =
+      snapshot.docs.map(
+        (practiceDocument) => ({
+          id:
+            practiceDocument.id,
 
-    return {
-      id: activeDocument.id,
-      ...activeDocument.data(),
+          ...practiceDocument.data(),
+        })
+      );
+
+    const getTimestamp = (
+      practice
+    ) => {
+      const value =
+        practice?.updatedAt ??
+        practice?.startedAt ??
+        practice?.createdAt;
+
+      if (
+        typeof value?.toMillis ===
+        "function"
+      ) {
+        return value.toMillis();
+      }
+
+      if (
+        typeof value?.toDate ===
+        "function"
+      ) {
+        return value
+          .toDate()
+          .getTime();
+      }
+
+      const date =
+        new Date(value);
+
+      return Number.isNaN(
+        date.getTime()
+      )
+        ? 0
+        : date.getTime();
     };
+
+    practices.sort(
+      (
+        firstPractice,
+        secondPractice
+      ) =>
+        getTimestamp(
+          secondPractice
+        ) -
+        getTimestamp(
+          firstPractice
+        )
+    );
+
+    console.log(
+      "Active practice found:",
+      practices[0]
+    );
+
+    return practices[0];
   };
 
 

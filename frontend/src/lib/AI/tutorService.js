@@ -43,8 +43,8 @@ const tutorResponseSchema = {
         overall: {
           type: Type.STRING,
 
-          description:
-            "Brief pedagogical feedback about the student's latest response.",
+           description:
+            "Specific and personalized pedagogical feedback about the student's latest response. Mention what the student achieved and the most useful next improvement. Avoid generic praise.",
         },
 
         strengths: {
@@ -55,7 +55,7 @@ const tutorResponseSchema = {
           },
 
           description:
-            "Specific strengths detected in the student's latest response.",
+            "One or two specific strengths demonstrated in the student's latest response. Do not invent strengths from historical data.",
         },
 
         improvements: {
@@ -66,7 +66,7 @@ const tutorResponseSchema = {
           },
 
           description:
-            "Specific aspects the student can improve.",
+            "One or two immediate and actionable improvements based on the latest response and current learning objective.",
         },
       },
 
@@ -518,6 +518,7 @@ export const generateTutorResponse =
       buildTutorPrompt({
         context,
         messages,
+        
         latestMessage:
           normalizedLatestMessage,
         studentProfile,

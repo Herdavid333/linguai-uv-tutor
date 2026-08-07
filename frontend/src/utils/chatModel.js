@@ -6,11 +6,23 @@ export const MESSAGE_ROLES = {
   SYSTEM: "system",
 };
 
-export const createEmptyLearningSummary = () => ({
-  corrections: [],
-  newWords: [],
-  grammarStructures: [],
-});
+export const createEmptyLearningSummary =
+  () => {
+    return {
+      corrections: [],
+      newWords: [],
+      grammarStructures: [],
+
+      feedback: {
+        overall: "",
+        strengths: [],
+        improvements: [],
+      },
+
+      nextSuggestion: "",
+      latestScore: null,
+    };
+  };
 
 export const createNewConversation = (context) => {
   return {

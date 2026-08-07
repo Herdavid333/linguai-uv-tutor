@@ -79,28 +79,50 @@ export default function HomePage() {
   const buildChatUrl = (
     activityContext
   ) => {
+    if (
+      !activityContext?.unitId ||
+      !activityContext?.topicId ||
+      !activityContext?.activityType ||
+      !activityContext?.activityName
+    ) {
+      console.error(
+        "Incomplete activity context:",
+        activityContext
+      );
+
+      return null;
+    }
+
     const params =
       new URLSearchParams({
         unitId:
           activityContext.unitId,
 
+        unitTitle:
+          activityContext.unitTitle ||
+          "",
+
         topicId:
           activityContext.topicId,
 
+        topicTitle:
+          activityContext.topicTitle ||
+          "",
+
         activityId:
-          activityContext.activityId,
+          activityContext.activityId ||
+          "",
 
         activityType:
           activityContext.activityType,
 
-        unitTitle:
-          activityContext.unitTitle,
-
-        topicTitle:
-          activityContext.topicTitle,
-
         activityName:
           activityContext.activityName,
+
+        activityDescription:
+          activityContext
+            .activityDescription ||
+          "",
       });
 
     return `/chat?${params.toString()}`;
@@ -134,6 +156,11 @@ export default function HomePage() {
 
     const loadActivePractice =
       async () => {
+        console.log(
+          "Home user UID:",
+          user?.uid
+        );
+
         if (!user?.uid) {
           if (!cancelled) {
             setActivePractice(null);
@@ -141,27 +168,38 @@ export default function HomePage() {
           }
           return;
         }
-
         try {
           setLoadingActivePractice(true);
-
           const practice =
             await getActivePractice(user.uid);
 
+          console.log(
+            "Practice received in Home:",
+            practice
+          )
 
           if (cancelled) {
             return;
           }
-          /*
-          * Aunque el servicio ya filtra por
-          * status === "in_progress", se valida
-          * nuevamente en la interfaz.
-          */
-          if (practice?.id && practice.status !== "in_progress") {
-            setActivePractice(practice);
-          }else {
-            setActivePractice(null);
-          }
+
+          const isResumable =
+            Boolean(
+              practice?.id &&
+              practice?.status ===
+                "in_progress"
+            );
+
+          console.log(
+            "Is resumable:",
+            isResumable
+          );
+
+          setActivePractice(
+            isResumable
+              ? practice
+              : null
+          );
+          
         } catch (error) {
           console.error(
             "Error loading active practice:",
@@ -192,7 +230,9 @@ export default function HomePage() {
       }
 
       router.push(
-        `/chat?practiceId=${activePractice.id}`
+        `/chat?practiceId=${encodeURIComponent(
+          activePractice.id
+        )}`
       );
     };
 
@@ -236,10 +276,66 @@ export default function HomePage() {
      CREACIÓN DE CONTEXTO CONVERSACIONAL
   ========================================================= */
   const handleSelectActivity =
-    async (activityContext) => {
-      if (!user?.uid) {
+    async (activity) => {
+      if (
+        !user?.uid ||
+        !selectedUnit ||
+        !selectedTopic ||
+        !activity
+      ) {
+        console.error(
+          "Missing information to start practice:",
+          {
+            userId: user?.uid,
+            selectedUnit,
+            selectedTopic,
+            activity,
+          }
+        );
+
         return;
       }
+
+      const generatedActivityId = [
+        selectedTopic.id,
+        activity.type,
+        activity.name,
+      ]
+        .filter(Boolean)
+        .join("-")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+
+      const completeActivityContext = {
+        unitId:
+          selectedUnit.id,
+
+        unitTitle:
+          selectedUnit.title,
+
+        topicId:
+          selectedTopic.id,
+
+        topicTitle:
+          selectedTopic.title,
+
+        activityId:
+          activity.id ||
+          generatedActivityId,
+
+        activityType:
+          activity.type ||
+          "Conversation",
+
+        activityName:
+          activity.name ||
+          "English Practice",
+
+        activityDescription:
+          activity.description ||
+          "",
+      };
 
       try {
         const currentPractice =
@@ -247,13 +343,25 @@ export default function HomePage() {
             user.uid
           );
 
-        if (currentPractice) {
+        console.log(
+          "Current active practice:",
+          currentPractice
+        );
+
+        const hasResumablePractice =
+          Boolean(
+            currentPractice?.id &&
+            currentPractice?.status ===
+              "in_progress"
+          );
+
+        if (hasResumablePractice) {
           setActivePractice(
             currentPractice
           );
 
           setSelectedNewActivity(
-            activityContext
+            completeActivityContext
           );
 
           setShowActivePracticeModal(
@@ -263,11 +371,22 @@ export default function HomePage() {
           return;
         }
 
-        router.push(
+        setActivePractice(null);
+        setSelectedNewActivity(null);
+        setShowActivePracticeModal(false);
+
+        const chatUrl =
           buildChatUrl(
-            activityContext
-          )
-        );
+            completeActivityContext
+          );
+
+        if (!chatUrl) {
+          return;
+        }
+
+        setShowActivityModal(false);
+
+        router.push(chatUrl);
       } catch (error) {
         console.error(
           "Error checking active practice:",
@@ -378,6 +497,15 @@ export default function HomePage() {
             activePractice.id,
         });
 
+        const chatUrl =
+          buildChatUrl(
+            newActivity
+          );
+
+        if (!chatUrl) {
+          return;
+        }
+
         setShowActivePracticeModal(
           false
         );
@@ -386,11 +514,7 @@ export default function HomePage() {
         setActivePractice(null);
         setSelectedNewActivity(null);
 
-        router.push(
-          buildChatUrl(
-            newActivity
-          )
-        );
+        router.push(chatUrl);
       } catch (error) {
         console.error(
           "Error abandoning practice:",
@@ -400,6 +524,12 @@ export default function HomePage() {
         setIsChangingPractice(false);
       }
     };
+
+    console.log({
+      loadingActivePractice,
+      activePractice,
+      hasActivePractice,
+    });
 
   return (
     <>
@@ -562,14 +692,20 @@ export default function HomePage() {
                   className="
                     whitespace-nowrap
                     rounded-[5px]
-                    px-2
+                    bg-red-600
+                    px-4
                     py-2
                     text-[13px]
                     font-bold
-                    text-black
-                    transition
-                    hover:bg-gray-100
+                    text-white
+                    shadow-md
+                    transition-all
+                    duration-150
+                    hover:bg-red-700
+                    hover:shadow-lg
                     active:scale-95
+                    disabled:cursor-not-allowed
+                    disabled:opacity-50
                   "
                 >
                   Continue Here

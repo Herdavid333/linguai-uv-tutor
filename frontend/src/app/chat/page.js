@@ -14,6 +14,8 @@ import {
 import {
   getConversation,
   saveConversation,
+  clearConversation,
+  createNewConversation,
   createMessage,
   addMessageToConversation,
   createEmptyLearningSummary,
@@ -46,6 +48,58 @@ import {
   mergeGrammarStructures,
 } from "../../utils/chatLearningSummary";
 
+const buildChatUrl = (
+  activityContext
+) => {
+  if (
+    !activityContext?.unitId ||
+    !activityContext?.topicId ||
+    !activityContext?.activityType ||
+    !activityContext?.activityName
+  ) {
+    console.error(
+      "Incomplete practice context:",
+      activityContext
+    );
+
+    return null;
+  }
+
+  const params =
+    new URLSearchParams({
+      unitId:
+        activityContext.unitId,
+
+      unitTitle:
+        activityContext.unitTitle ||
+        "",
+
+      topicId:
+        activityContext.topicId,
+
+      topicTitle:
+        activityContext.topicTitle ||
+        "",
+
+      activityId:
+        activityContext.activityId ||
+        "",
+
+      activityType:
+        activityContext.activityType,
+
+      activityName:
+        activityContext.activityName,
+
+      activityDescription:
+        activityContext
+          .activityDescription ||
+        "",
+    });
+
+  return `/chat?${params.toString()}`;
+};
+
 export default function ChatPage() {
   /* =========================================================
      HOOKS Y ESTADOS PRINCIPALES
@@ -53,6 +107,11 @@ export default function ChatPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
+  const studentFirstName =
+    user?.fullName
+      ?.trim()
+      .split(/\s+/)[0] ||
+    "Student";
 
   const [conversation, setConversation] = useState(null);
   const [inputMessage, setInputMessage] = useState("");
@@ -65,9 +124,47 @@ export default function ChatPage() {
   const practiceIdFromUrl =
     searchParams.get("practiceId");
 
+  const unitIdFromUrl =
+  searchParams.get("unitId");
+
+  const unitTitleFromUrl =
+    searchParams.get("unitTitle");
+
+  const topicIdFromUrl =
+    searchParams.get("topicId");
+
+  const topicTitleFromUrl =
+    searchParams.get("topicTitle");
+
+  const activityIdFromUrl =
+    searchParams.get("activityId");
+
+  const activityTypeFromUrl =
+    searchParams.get("activityType");
+
+  const activityNameFromUrl =
+    searchParams.get("activityName");
+
+  const activityDescriptionFromUrl =
+    searchParams.get("activityDescription");
+
+  const hasNewPracticeContext =
+    Boolean(
+      !practiceIdFromUrl &&
+      unitIdFromUrl &&
+      topicIdFromUrl &&
+      activityTypeFromUrl &&
+      activityNameFromUrl
+    );
+
   const [
     isFinishingPractice,
     setIsFinishingPractice,
+  ] = useState(false);
+
+  const [
+    isLeavingChat,
+    setIsLeavingChat,
   ] = useState(false);
 
   const [
@@ -124,7 +221,9 @@ export default function ChatPage() {
           "Practice finalized:",
           result
         );
-
+        
+        clearConversation();
+        
         await refreshAdaptiveProfile();
 
         router.push("/progress");
@@ -154,6 +253,8 @@ export default function ChatPage() {
  * cualquier conversación local.
  */
   useEffect(() => {
+    let cancelled = false;
+
     const restorePracticeFromFirestore =
       async () => {
         if (
@@ -170,6 +271,10 @@ export default function ChatPage() {
               user.uid
             );
 
+          if (cancelled) {
+            return;
+          }
+
           if (
             !practice ||
             practice.status !==
@@ -182,6 +287,20 @@ export default function ChatPage() {
             router.replace("/home");
             return;
           }
+
+          const feedbackHistory =
+            Array.isArray(
+              practice.feedbackHistory
+            )
+              ? practice.feedbackHistory
+              : [];
+
+          const latestFeedback =
+            feedbackHistory.length > 0
+              ? feedbackHistory[
+                  feedbackHistory.length - 1
+                ]
+              : null;
 
           const restoredConversation = {
             id:
@@ -201,6 +320,9 @@ export default function ChatPage() {
               topicTitle:
                 practice.topicTitle || "",
 
+              activityId:
+                practice.activityId || "",
+
               activityType:
                 practice.activityType ||
                 "conversation",
@@ -209,8 +331,7 @@ export default function ChatPage() {
                 practice.activityName || "",
 
               activityDescription:
-                practice
-                  .activityDescription ||
+                practice.activityDescription ||
                 "",
             },
 
@@ -265,6 +386,52 @@ export default function ChatPage() {
                         .grammarStructures
                     : []
                 ),
+
+              feedback:
+                latestFeedback
+                  ? {
+                      overall:
+                        latestFeedback
+                          .overall || "",
+
+                      strengths:
+                        Array.isArray(
+                          latestFeedback
+                            .strengths
+                        )
+                          ? latestFeedback
+                              .strengths
+                          : [],
+
+                      improvements:
+                        Array.isArray(
+                          latestFeedback
+                            .improvements
+                        )
+                          ? latestFeedback
+                              .improvements
+                          : [],
+                    }
+                  : {
+                      overall: "",
+                      strengths: [],
+                      improvements: [],
+                    },
+
+              nextSuggestion:
+                practice.nextSuggestion ||
+                "",
+
+              latestScore:
+                Number.isFinite(
+                  Number(
+                    practice.latestScore
+                  )
+                )
+                  ? Number(
+                      practice.latestScore
+                    )
+                  : null,
             },
 
             createdAt:
@@ -287,14 +454,23 @@ export default function ChatPage() {
             restoredConversation
           );
         } catch (error) {
+          if (cancelled) {
+            return;
+          }
+
           console.error(
             "Error restoring active practice:",
             error
           );
+          router.replace("/home");
         }
       };
 
     restorePracticeFromFirestore();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     user?.uid,
     practiceIdFromUrl,
@@ -313,12 +489,98 @@ export default function ChatPage() {
   }, [isFinishingPractice]);
 
   /* =========================================================
+   CREAR CONVERSACIÓN DESDE UNA ACTIVIDAD NUEVA
+  ========================================================= */
+  useEffect(() => {
+    if (
+      !user?.uid ||
+      !hasNewPracticeContext
+    ) {
+      return;
+    }
+
+    const newContext = {
+      unitId:
+        unitIdFromUrl || "",
+
+      unitTitle:
+        unitTitleFromUrl || "",
+
+      topicId:
+        topicIdFromUrl || "",
+
+      topicTitle:
+        topicTitleFromUrl || "",
+
+      activityId:
+        activityIdFromUrl || "",
+
+      activityType:
+        activityTypeFromUrl ||
+        "conversation",
+
+      activityName:
+        activityNameFromUrl ||
+        "English practice",
+
+      activityDescription:
+        activityDescriptionFromUrl || "",
+    };
+
+    const initialTutorMessage =
+      createMessage({
+        role:
+          MESSAGE_ROLES.ASSISTANT,
+
+        content:
+          `Hello! Let’s practice ${newContext.topicTitle} through ${newContext.activityName}.`,
+      });
+
+    const newConversation = {
+      ...createNewConversation(
+        newContext
+      ),
+
+      practiceHistoryId: null,
+
+      learningSummary:
+        createEmptyLearningSummary(),
+
+      messages: [
+        initialTutorMessage,
+      ],
+    };
+
+    practiceCreationRef.current =
+      null;
+
+    setConversation(
+      newConversation
+    );
+
+    saveConversation(
+      newConversation
+    );
+  }, [
+    user?.uid,
+    hasNewPracticeContext,
+    unitIdFromUrl,
+    unitTitleFromUrl,
+    topicIdFromUrl,
+    topicTitleFromUrl,
+    activityIdFromUrl,
+    activityTypeFromUrl,
+    activityNameFromUrl,
+    activityDescriptionFromUrl,
+  ]);
+
+  /* =========================================================
      CARGA INICIAL DE LA CONVERSACIÓN
   ========================================================= */
   useEffect(() => {
     const loadSavedConversation = async () => {
 
-      if (practiceIdFromUrl || !user?.uid) {
+      if (practiceIdFromUrl || hasNewPracticeContext || !user?.uid) {
         return;
       }
 
@@ -360,6 +622,20 @@ export default function ChatPage() {
               user.uid
             );
 
+          const feedbackHistory =
+            Array.isArray(
+              practiceData.feedbackHistory
+            )
+              ? practiceData.feedbackHistory
+              : [];
+
+          const latestFeedback =
+            feedbackHistory.length > 0
+              ? feedbackHistory[
+                  feedbackHistory.length - 1
+                ]
+              : null;
+
           if (
             !practiceData ||
             practiceData.status !== "in_progress"
@@ -395,6 +671,49 @@ export default function ChatPage() {
                     ? practiceData.grammarStructures
                     : []
                 ),
+              
+              feedback:
+                latestFeedback
+                  ? {
+                      overall:
+                        latestFeedback.overall ||
+                        "",
+
+                      strengths:
+                        Array.isArray(
+                          latestFeedback.strengths
+                        )
+                          ? latestFeedback.strengths
+                          : [],
+
+                      improvements:
+                        Array.isArray(
+                          latestFeedback.improvements
+                        )
+                          ? latestFeedback.improvements
+                          : [],
+                    }
+                  : {
+                      overall: "",
+                      strengths: [],
+                      improvements: [],
+                    },
+
+              nextSuggestion:
+                practiceData.nextSuggestion ||
+                "",
+
+              latestScore:
+                Number.isFinite(
+                  Number(
+                    practiceData.latestScore
+                  )
+                )
+                  ? Number(
+                      practiceData.latestScore
+                    )
+                  : null,
+              
             },
 
             updatedAt: Date.now(),
@@ -415,7 +734,7 @@ export default function ChatPage() {
     };
 
     loadSavedConversation();
-  }, [practiceIdFromUrl, user?.uid]);
+  }, [practiceIdFromUrl, hasNewPracticeContext, user?.uid]);
 
   useEffect(() => {
     return () => {
@@ -448,96 +767,9 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (
-      !user?.uid ||
-      !practiceIdFromUrl
-    ) {
-      return;
-    }
-
-    let cancelled = false;
-
-    const restorePractice =
-      async () => {
-        try {
-          const practice =
-            await getPracticeHistoryById(
-              practiceIdFromUrl,
-              user.uid
-            );
-
-          if (
-            cancelled ||
-            !practice
-          ) {
-            return;
-          }
-
-          setConversation(
-            (previousConversation) => ({
-              ...previousConversation,
-
-              context: {
-                unitId:
-                  practice.unitId || "",
-
-                unitTitle:
-                  practice.unitTitle || "",
-
-                topicId:
-                  practice.topicId || "",
-
-                topicTitle:
-                  practice.topicTitle || "",
-
-                activityType:
-                  practice.activityType || "",
-
-                activityName:
-                  practice.activityName || "",
-              },
-
-              practiceHistoryId:
-                practice.id,
-
-              messages:
-                Array.isArray(
-                  practice.messages
-                )
-                  ? practice.messages
-                  : [],
-            })
-          );
-        } catch (error) {
-          console.error(
-            "Error restoring practice:",
-            error
-          );
-        }
-      };
-
-    restorePractice();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    user?.uid,
-    practiceIdFromUrl,
-  ]);
-
-  useEffect(() => {
-    if (
       !conversation?.context ||
       !user?.uid ||
       conversation.practiceHistoryId
-    ) {
-      return;
-    }
-
-    if (
-      practiceIdFromUrl &&
-      !conversation
-        ?.practiceHistoryId
     ) {
       return;
     }
@@ -549,11 +781,8 @@ export default function ChatPage() {
   }, [
     conversation?.context,
     conversation?.practiceHistoryId,
-    user?.uid,
-    practiceIdFromUrl,
+    user?.uid
   ]);
-
-  
 
   useEffect(() => {
     const loadAdaptiveProfile = async () => {
@@ -685,7 +914,75 @@ export default function ChatPage() {
         },
 
         difficulty: "Beginner",
-        studentProfile: adaptiveStudentProfile,
+        studentProfile:
+          adaptiveStudentProfile || {
+            hasHistoricalData: false,
+            hasEvaluatedData: false,
+
+            averageScore: null,
+
+            performance: {
+              accuracy: null,
+              grammar: null,
+              vocabulary: null,
+              interaction: null,
+            },
+
+            skillLevels: {
+              accuracy: "unknown",
+              grammar: "unknown",
+              vocabulary: "unknown",
+              interaction: "unknown",
+            },
+
+            recommendedDifficulty:
+              "beginner_standard",
+
+            frequentErrors: [],
+            learnedVocabulary: [],
+
+            teachingPriorities: [
+              "Use a balanced A1 approach and observe the student's current response before adapting.",
+            ],
+
+            adaptation: {
+              correctionIntensity:
+                "balanced",
+
+              questionStyle:
+                "guided_open",
+
+              responseLength:
+                "short_complete",
+
+              scaffoldingLevel:
+                "medium",
+            },
+
+            feedbackStrategy: {
+              hasReliableHistory: false,
+
+              weakestSkill: null,
+              strongestSkill: null,
+
+              correctionMode:
+                "balanced",
+
+              interactionSupport:
+                "standard",
+
+              maximumCorrectionsPerTurn:
+                1,
+
+              requestReformulation:
+                false,
+
+              praiseSpecificStrength:
+                true,
+
+              recurringTargets: [],
+            },
+          },
 
         // El último mensaje se envía por separado como userMessage.
         recentMessages: updatedConversation.messages
@@ -708,6 +1005,13 @@ export default function ChatPage() {
       };
 
       console.log("Payload enviado a Gemini:", payload);
+
+      console.log(
+        "Feedback strategy sent:",
+        payload
+          .studentProfile
+          ?.feedbackStrategy
+      );
 
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -744,26 +1048,85 @@ export default function ChatPage() {
         createEmptyLearningSummary();
 
       const updatedLearningSummary = {
-        corrections: mergeCorrections(
-          currentSummary.corrections,
-          Array.isArray(data.corrections)
-            ? data.corrections
-            : []
-        ),
+        corrections:
+          mergeCorrections(
+            currentSummary.corrections,
+            Array.isArray(
+              data.corrections
+            )
+              ? data.corrections
+              : []
+          ),
 
-        newWords: mergeNewWords(
-          currentSummary.newWords,
-          Array.isArray(data.newWords)
-            ? data.newWords
-            : []
-        ),
+        newWords:
+          mergeNewWords(
+            currentSummary.newWords,
+            Array.isArray(
+              data.newWords
+            )
+              ? data.newWords
+              : []
+          ),
 
-        grammarStructures: mergeGrammarStructures(
-          currentSummary.grammarStructures,
-          Array.isArray(data.grammarStructures)
-            ? data.grammarStructures
-            : []
-        ),
+        grammarStructures:
+          mergeGrammarStructures(
+            currentSummary
+              .grammarStructures,
+            Array.isArray(
+              data.grammarStructures
+            )
+              ? data.grammarStructures
+              : []
+          ),
+
+        feedback:
+          data?.feedback &&
+          typeof data.feedback ===
+            "object"
+            ? {
+                overall:
+                  data.feedback
+                    .overall || "",
+
+                strengths:
+                  Array.isArray(
+                    data.feedback
+                      .strengths
+                  )
+                    ? data.feedback
+                        .strengths
+                    : [],
+
+                improvements:
+                  Array.isArray(
+                    data.feedback
+                      .improvements
+                  )
+                    ? data.feedback
+                        .improvements
+                    : [],
+              }
+            : currentSummary.feedback ||
+              {
+                overall: "",
+                strengths: [],
+                improvements: [],
+              },
+
+        nextSuggestion:
+          data?.nextSuggestion ||
+          currentSummary
+            .nextSuggestion ||
+          "",
+
+        latestScore:
+          Number.isFinite(
+            Number(data?.score)
+          )
+            ? Number(data.score)
+            : currentSummary
+                .latestScore ??
+              null,
       };
 
       let activePracticeHistoryId =
@@ -993,6 +1356,79 @@ export default function ChatPage() {
     return practiceCreationRef.current;
   };
 
+  const handleGoHome = async () => {
+    if (
+      !conversation ||
+      !user?.uid ||
+      isLeavingChat ||
+      isFinishingPractice ||
+      isAbandoningPractice ||
+      isAssistantTyping
+    ) {
+      return;
+    }
+
+    try {
+      setIsLeavingChat(true);
+
+      let activePracticeId =
+        conversation.practiceHistoryId ||
+        null;
+
+      /*
+      * Si la conversación todavía no está asociada
+      * a un documento, se crea antes de salir.
+      */
+      if (
+        !activePracticeId &&
+        conversation.context
+      ) {
+        activePracticeId =
+          await registerPracticeHistory(
+            conversation.context,
+            conversation
+          );
+      }
+
+      if (!activePracticeId) {
+        throw new Error(
+          "practice-history-could-not-be-created"
+        );
+      }
+
+      /*
+      * Guarda localmente el ID antes de navegar,
+      * para que Continue Here también pueda
+      * restaurar correctamente la conversación.
+      */
+      const conversationToSave = {
+        ...conversation,
+
+        practiceHistoryId:
+          activePracticeId,
+
+        updatedAt:
+          Date.now(),
+      };
+
+      setConversation(
+        conversationToSave
+      );
+
+      saveConversation(
+        conversationToSave
+      );
+
+      router.push("/home");
+    } catch (error) {
+      console.error(
+        "Error saving practice before going home:",
+        error
+      );
+    } finally {
+      setIsLeavingChat(false);
+    }
+  };
 
   const refreshAdaptiveProfile =
     async () => {
@@ -1030,7 +1466,8 @@ export default function ChatPage() {
     if (
       !newContext ||
       isAssistantTyping ||
-      isFinishingPractice
+      isFinishingPractice ||
+      isAbandoningPractice
     ) {
       return;
     }
@@ -1067,95 +1504,17 @@ export default function ChatPage() {
 
       return;
     }
+    const chatUrl =
+      buildChatUrl(newContext);
 
-    startNewPractice(
-      newContext
-    );
+    if (!chatUrl) {
+      return;
+    }
+
+    clearConversation();
+    setShowSideMenu(false);
+    router.replace(chatUrl);
   };
-
-  const startNewPractice =
-    async (newContext) => {
-      if (!newContext) {
-        return;
-      }
-
-      try {
-        const initialTutorMessage =
-          createMessage({
-            role:
-              MESSAGE_ROLES.ASSISTANT,
-
-            content:
-              `Great! Now let’s practice ${newContext.topicTitle} through ${newContext.activityName}.`,
-          });
-
-        const newConversation = {
-          id: crypto.randomUUID(),
-
-          context: {
-            unitId:
-              newContext.unitId,
-
-            unitTitle:
-              newContext.unitTitle,
-
-            topicId:
-              newContext.topicId,
-
-            topicTitle:
-              newContext.topicTitle,
-
-            activityType:
-              newContext.activityType ||
-              "conversation",
-
-            activityName:
-              newContext.activityName,
-
-            activityDescription:
-              newContext
-                .activityDescription ||
-              "",
-          },
-
-          practiceHistoryId: null,
-
-          learningSummary:
-            createEmptyLearningSummary(),
-
-          messages: [
-            initialTutorMessage,
-          ],
-
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        };
-
-        practiceCreationRef.current =
-          null;
-
-        setConversation(
-          newConversation
-        );
-
-        saveConversation(
-          newConversation
-        );
-
-        setShowLearningSummary(
-          false
-        );
-
-        setShowSideMenu(false);
-        setInputMessage("");
-        setAnimatedAssistantText("");
-      } catch (error) {
-        console.error(
-          "Error starting new practice:",
-          error
-        );
-      }
-    };
 
   const handleContinueCurrentPractice =
     () => {
@@ -1192,27 +1551,33 @@ export default function ChatPage() {
           true
         );
 
+        const nextContext =
+          pendingPracticeContext;
+
         await abandonPracticeHistory({
           userId: user.uid,
           practiceId,
         });
 
-        const nextContext =
-          pendingPracticeContext;
+        const chatUrl =
+          buildChatUrl(
+            nextContext
+          );
 
-        setShowChangePracticeModal(
-          false
-        );
+        if (!chatUrl) {
+          return;
+        }
 
-        setPendingPracticeContext(
-          null
-        );
+        clearConversation();
 
-        router.replace("/chat");
+        setShowChangePracticeModal(false);
 
-        await startNewPractice(
-          nextContext
-        );
+        setPendingPracticeContext(null);
+
+        setShowSideMenu(false);
+        setConversation(null);
+
+        router.replace(chatUrl);
       } catch (error) {
         console.error(
           "Error abandoning practice:",
@@ -1282,7 +1647,7 @@ export default function ChatPage() {
           <button
             type="button"
             onClick={() =>setShowSideMenu(true)}
-            disabled={isFinishingPractice}
+            disabled={isFinishingPractice || isAbandoningPractice || isAssistantTyping || isLeavingChat}
             aria-label="Open practice menu"
             className="flex items-center justify-center border-r border-white py-1 disabled:cursor-not-allowed disabled:opacity-40 "
           >
@@ -1300,9 +1665,18 @@ export default function ChatPage() {
           {/* Botón para volver al Home */}
           <button
             type="button"
-            onClick={() => router.push("/home")}
-            disabled={isFinishingPractice}
-            aria-label="Go to Home"
+            onClick={handleGoHome}
+            disabled={
+              isLeavingChat ||
+              isFinishingPractice ||
+              isAbandoningPractice ||
+              isAssistantTyping
+            }
+            aria-label={
+              isLeavingChat
+                ? "Saving practice"
+                : "Go to Home"
+            }
             className="flex items-center justify-center border-l border-white py-1 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Home size={25} className="text-black fill-black" />
@@ -1368,7 +1742,7 @@ export default function ChatPage() {
                     <User size={24} className="text-black fill-black" />
 
                     <span className="text-[15px] font-bold text-black">
-                      Hernan
+                      {studentFirstName}
                     </span>
                   </div>
                 ) : (
@@ -1458,11 +1832,55 @@ export default function ChatPage() {
         </div>
 
         <LearningSummaryPanel
-          isOpen={showLearningSummary}
-          onClose={() => setShowLearningSummary(false)}
-          corrections={learningSummary.corrections}
-          newWords={learningSummary.newWords}
-          grammarStructures={learningSummary.grammarStructures}
+          isOpen={
+            showLearningSummary
+          }
+
+          onClose={() =>
+            setShowLearningSummary(
+              false
+            )
+          }
+
+          context={
+            conversation?.context ||
+            {}
+          }
+
+          corrections={
+            learningSummary
+              .corrections
+          }
+
+          newWords={
+            learningSummary
+              .newWords
+          }
+
+          grammarStructures={
+            learningSummary
+              .grammarStructures
+          }
+
+          feedback={
+            learningSummary
+              .feedback
+          }
+
+          nextSuggestion={
+            learningSummary
+              .nextSuggestion
+          }
+
+          latestScore={
+            learningSummary
+              .latestScore
+          }
+
+          messages={
+            conversation?.messages ||
+            []
+          }
         />
 
         <ChatFooter

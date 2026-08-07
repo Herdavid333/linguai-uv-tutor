@@ -1,18 +1,9 @@
 /**
- * Construye un perfil pedagógico resumido a partir del historial
- * de prácticas almacenado en Firestore.
+ * Construye el perfil adaptativo longitudinal del estudiante
+ * usando su historial de prácticas.
  *
- * Este archivo no modifica Firestore.
+ * No modifica Firestore.
  */
-
-const normalizeText = (value = "") => {
-  return typeof value === "string"
-    ? value
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, " ")
-    : "";
-};
 
 const normalizeMetric = (value) => {
   const numericValue = Number(value);
@@ -38,52 +29,196 @@ const calculateAverage = (values = []) => {
 
   return Math.round(
     validValues.reduce(
-      (total, value) => total + value,
+      (sum, value) => sum + value,
       0
     ) / validValues.length
   );
 };
 
-const getEvaluatedPractices = (
-  practiceHistory = []
-) => {
-  if (!Array.isArray(practiceHistory)) {
-    return [];
-  }
-
-  return practiceHistory.filter(
-    (practice) =>
-      practice?.status === "completed" &&
-      practice?.evaluationStatus === "evaluated" &&
-      Number.isFinite(
-        Number(practice?.finalScore)
-      )
-  );
+const normalizeText = (value) => {
+  return typeof value === "string"
+    ? value
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+    : "";
 };
 
-const getCorrectionLabel = (
-  correction = {}
-) => {
-  const wrong =
-    typeof correction?.wrong === "string"
-      ? correction.wrong.trim()
-      : "";
+const getSkillLevel = (score) => {
+  const normalizedScore =
+    normalizeMetric(score);
 
-  const correct =
-    typeof correction?.correct === "string"
-      ? correction.correct.trim()
-      : "";
-
-  if (wrong && correct) {
-    return `${wrong} → ${correct}`;
+  if (normalizedScore === null) {
+    return "unknown";
   }
 
-  return (
-    correct ||
-    wrong ||
-    correction?.explanation ||
-    "Unspecified error"
+  if (normalizedScore < 50) {
+    return "needs_support";
+  }
+
+  if (normalizedScore < 70) {
+    return "developing";
+  }
+
+  if (normalizedScore < 86) {
+    return "competent";
+  }
+
+  return "strong";
+};
+
+const getRecommendedDifficulty = ({
+  averageScore,
+  performance,
+}) => {
+  const availableValues = [
+    averageScore,
+    performance.accuracy,
+    performance.grammar,
+    performance.vocabulary,
+    performance.interaction,
+  ].filter((value) =>
+    Number.isFinite(Number(value))
   );
+
+  if (availableValues.length === 0) {
+    return "beginner_standard";
+  }
+
+  const overall = Math.round(
+    availableValues.reduce(
+      (sum, value) => sum + Number(value),
+      0
+    ) / availableValues.length
+  );
+
+  if (overall < 50) {
+    return "beginner_supported";
+  }
+
+  if (overall < 70) {
+    return "beginner_standard";
+  }
+
+  if (overall < 86) {
+    return "beginner_challenging";
+  }
+
+  return "pre_intermediate_transition";
+};
+
+const getCorrectionIntensity = ({
+  grammar,
+  accuracy,
+  frequentErrors,
+}) => {
+  const importantErrors =
+    frequentErrors.filter(
+      (error) => error.occurrences >= 2
+    ).length;
+
+  if (
+    grammar === null &&
+    accuracy === null
+  ) {
+    return "balanced";
+  }
+
+  if (
+    Number(grammar) < 55 ||
+    Number(accuracy) < 55 ||
+    importantErrors >= 4
+  ) {
+    return "guided";
+  }
+
+  if (
+    Number(grammar) >= 80 &&
+    Number(accuracy) >= 80
+  ) {
+    return "selective";
+  }
+
+  return "balanced";
+};
+
+const getQuestionStyle = ({
+  interaction,
+  recommendedDifficulty,
+}) => {
+  if (
+    interaction !== null &&
+    interaction < 55
+  ) {
+    return "closed_with_examples";
+  }
+
+  if (
+    recommendedDifficulty ===
+      "beginner_challenging" ||
+    recommendedDifficulty ===
+      "pre_intermediate_transition"
+  ) {
+    return "open_guided";
+  }
+
+  return "guided_open";
+};
+
+const getResponseLength = ({
+  interaction,
+  vocabulary,
+}) => {
+  if (
+    interaction !== null &&
+    interaction < 50
+  ) {
+    return "very_short";
+  }
+
+  if (
+    vocabulary !== null &&
+    vocabulary < 55
+  ) {
+    return "short";
+  }
+
+  return "short_complete";
+};
+
+const getScaffoldingLevel = ({
+  grammar,
+  vocabulary,
+  interaction,
+}) => {
+  const values = [
+    grammar,
+    vocabulary,
+    interaction,
+  ].filter((value) =>
+    Number.isFinite(Number(value))
+  );
+
+  if (values.length === 0) {
+    return "medium";
+  }
+
+  const average =
+    values.reduce(
+      (sum, value) =>
+        sum + Number(value),
+      0
+    ) / values.length;
+
+  if (average < 55) {
+    return "high";
+  }
+
+  if (average < 75) {
+    return "medium";
+  }
+
+  return "low";
 };
 
 const calculateFrequentErrors = (
@@ -99,54 +234,71 @@ const calculateFrequentErrors = (
       : [];
 
     corrections.forEach((correction) => {
-      const wrong = normalizeText(
-        correction?.wrong
-      );
+      const wrong =
+        typeof correction?.wrong ===
+        "string"
+          ? correction.wrong.trim()
+          : "";
 
-      const correct = normalizeText(
-        correction?.correct
-      );
+      const correct =
+        typeof correction?.correct ===
+        "string"
+          ? correction.correct.trim()
+          : "";
 
-      if (!wrong && !correct) {
+      if (!wrong || !correct) {
         return;
       }
 
       const type =
-        normalizeText(correction?.type) ||
-        "other";
+        normalizeText(
+          correction?.type
+        ) || "other";
 
-      const key = `${type}|${wrong}|${correct}`;
+      const key = [
+        type,
+        normalizeText(wrong),
+        normalizeText(correct),
+      ].join("|");
 
-      const storedOccurrences = Number(
-        correction?.occurrences
-      );
+      const storedOccurrences =
+        Number(
+          correction?.occurrences
+        );
 
       const occurrences =
-        Number.isFinite(storedOccurrences) &&
+        Number.isFinite(
+          storedOccurrences
+        ) &&
         storedOccurrences > 0
           ? storedOccurrences
           : 1;
 
-      const existingError =
+      const current =
         errorsMap.get(key);
 
-      if (existingError) {
-        errorsMap.set(key, {
-          ...existingError,
-          occurrences:
-            existingError.occurrences +
-            occurrences,
-        });
+      if (current) {
+        current.occurrences +=
+          occurrences;
+
+        if (
+          !current.explanation &&
+          correction?.explanation
+        ) {
+          current.explanation =
+            correction.explanation;
+        }
 
         return;
       }
 
       errorsMap.set(key, {
         type,
-        label:
-          getCorrectionLabel(correction),
+        wrong,
+        correct,
         explanation:
-          correction?.explanation || "",
+          correction?.explanation ||
+          "",
         occurrences,
       });
     });
@@ -154,328 +306,497 @@ const calculateFrequentErrors = (
 
   return Array.from(
     errorsMap.values()
-  ).sort(
-    (firstError, secondError) =>
-      secondError.occurrences -
-      firstError.occurrences
-  );
+  )
+    .sort(
+      (first, second) =>
+        second.occurrences -
+        first.occurrences
+    )
+    .slice(0, 8);
 };
 
-const calculateVocabulary = (
+const calculateLearnedVocabulary = (
   practiceHistory = []
 ) => {
   const vocabularyMap = new Map();
 
   practiceHistory.forEach((practice) => {
-    const newWords = Array.isArray(
+    const words = Array.isArray(
       practice?.newWords
     )
       ? practice.newWords
       : [];
 
-    newWords.forEach((item) => {
+    words.forEach((item) => {
       const word =
         typeof item === "string"
           ? item.trim()
           : String(
-              item?.word ??
-                item?.term ??
-                ""
+              item?.word ?? ""
             ).trim();
 
       if (!word) {
         return;
       }
 
-      const key = normalizeText(word);
+      const key =
+        word.toLowerCase();
 
-      const existingWord =
-        vocabularyMap.get(key);
-
-      const occurrences =
-        Number.isFinite(
-          Number(item?.occurrences)
-        ) &&
-        Number(item?.occurrences) > 0
-          ? Number(item.occurrences)
-          : 1;
-
-      if (existingWord) {
+      if (
+        !vocabularyMap.has(key)
+      ) {
         vocabularyMap.set(key, {
-          ...existingWord,
-          occurrences:
-            existingWord.occurrences +
-            occurrences,
+          word,
+          meaning:
+            typeof item === "object"
+              ? item?.meaning || ""
+              : "",
         });
-
-        return;
       }
-
-      vocabularyMap.set(key, {
-        word,
-        meaning:
-          typeof item === "object"
-            ? item?.meaning ||
-              item?.definition ||
-              ""
-            : "",
-        occurrences,
-      });
     });
   });
 
   return Array.from(
     vocabularyMap.values()
-  ).sort(
-    (firstWord, secondWord) =>
-      secondWord.occurrences -
-      firstWord.occurrences
-  );
-};
-
-const getSkillLevel = (score) => {
-  if (!Number.isFinite(score)) {
-    return "unknown";
-  }
-
-  if (score >= 85) {
-    return "strong";
-  }
-
-  if (score >= 70) {
-    return "developing";
-  }
-
-  return "needs_support";
-};
-
-const getRecommendedDifficulty = ({
-  averageScore,
-  grammar,
-  vocabulary,
-  interaction,
-}) => {
-  const availableMetrics = [
-    averageScore,
-    grammar,
-    vocabulary,
-    interaction,
-  ].filter(Number.isFinite);
-
-  if (availableMetrics.length === 0) {
-    return "beginner_standard";
-  }
-
-  const overall = calculateAverage(
-    availableMetrics
-  );
-
-  if (overall >= 85) {
-    return "beginner_challenging";
-  }
-
-  if (overall >= 65) {
-    return "beginner_standard";
-  }
-
-  return "beginner_supported";
+  ).slice(0, 20);
 };
 
 const buildTeachingPriorities = ({
-  grammar,
-  vocabulary,
-  accuracy,
-  interaction,
+  performance,
   frequentErrors,
 }) => {
   const priorities = [];
 
   if (
-    Number.isFinite(grammar) &&
-    grammar < 70
+    performance.grammar !== null &&
+    performance.grammar < 65
   ) {
     priorities.push(
-      "Provide additional support with grammar structures."
+      "Reinforce the target grammar with short examples and guided reformulation."
     );
   }
 
   if (
-    Number.isFinite(vocabulary) &&
-    vocabulary < 70
+    performance.vocabulary !== null &&
+    performance.vocabulary < 65
   ) {
     priorities.push(
-      "Use familiar vocabulary and introduce new words gradually."
+      "Use familiar A1 vocabulary and introduce no more than one useful new expression at a time."
     );
   }
 
   if (
-    Number.isFinite(accuracy) &&
-    accuracy < 70
+    performance.interaction !== null &&
+    performance.interaction < 65
   ) {
     priorities.push(
-      "Check whether the student's sentences communicate the intended meaning clearly."
+      "Ask one clear question at a time and provide answer starters when the student hesitates."
     );
   }
 
   if (
-    Number.isFinite(interaction) &&
-    interaction < 70
+    performance.accuracy !== null &&
+    performance.accuracy < 65
   ) {
     priorities.push(
-      "Encourage slightly longer and more complete answers."
+      "Check whether the student's response communicates the intended meaning before increasing difficulty."
     );
   }
 
   if (frequentErrors.length > 0) {
+    const mainErrors =
+      frequentErrors
+        .slice(0, 3)
+        .map(
+          (error) =>
+            `${error.wrong} → ${error.correct}`
+        )
+        .join("; ");
+
     priorities.push(
-      "Reinforce the student's recurring errors naturally during practice."
+      `Naturally reinforce recurring errors when relevant: ${mainErrors}.`
     );
   }
 
   if (priorities.length === 0) {
     priorities.push(
-      "Maintain the current level and introduce small challenges."
+      "Maintain the current level and gradually encourage longer, more independent responses."
     );
   }
 
   return priorities;
 };
 
+const getWeakestSkill = (
+  performance = {}
+) => {
+  const availableSkills = [
+    {
+      name: "accuracy",
+      value: performance.accuracy,
+    },
+    {
+      name: "grammar",
+      value: performance.grammar,
+    },
+    {
+      name: "vocabulary",
+      value: performance.vocabulary,
+    },
+    {
+      name: "interaction",
+      value: performance.interaction,
+    },
+  ].filter((skill) =>
+    Number.isFinite(
+      Number(skill.value)
+    )
+  );
+
+  if (
+    availableSkills.length === 0
+  ) {
+    return null;
+  }
+
+  availableSkills.sort(
+    (firstSkill, secondSkill) =>
+      Number(firstSkill.value) -
+      Number(secondSkill.value)
+  );
+
+  return availableSkills[0].name;
+};
+
+const getStrongestSkill = (
+  performance = {}
+) => {
+  const availableSkills = [
+    {
+      name: "accuracy",
+      value: performance.accuracy,
+    },
+    {
+      name: "grammar",
+      value: performance.grammar,
+    },
+    {
+      name: "vocabulary",
+      value: performance.vocabulary,
+    },
+    {
+      name: "interaction",
+      value: performance.interaction,
+    },
+  ].filter((skill) =>
+    Number.isFinite(
+      Number(skill.value)
+    )
+  );
+
+  if (
+    availableSkills.length === 0
+  ) {
+    return null;
+  }
+
+  availableSkills.sort(
+    (firstSkill, secondSkill) =>
+      Number(secondSkill.value) -
+      Number(firstSkill.value)
+  );
+
+  return availableSkills[0].name;
+};
+
+const buildFeedbackStrategy = ({
+  performance,
+  frequentErrors = [],
+  evaluatedPractices = 0,
+}) => {
+  const weakestSkill =
+    getWeakestSkill(performance);
+
+  const strongestSkill =
+    getStrongestSkill(performance);
+
+  const grammarScore =
+    Number(performance?.grammar);
+
+  const interactionScore =
+    Number(performance?.interaction);
+
+  const accuracyScore =
+    Number(performance?.accuracy);
+
+  const hasReliableHistory =
+    evaluatedPractices >= 2;
+
+  let correctionMode =
+    "balanced";
+
+  if (
+    hasReliableHistory &&
+    (
+      grammarScore < 60 ||
+      accuracyScore < 60
+    )
+  ) {
+    correctionMode =
+      "guided";
+  } else if (
+    hasReliableHistory &&
+    grammarScore >= 80 &&
+    accuracyScore >= 80
+  ) {
+    correctionMode =
+      "selective";
+  }
+
+  let interactionSupport =
+    "standard";
+
+  if (
+    hasReliableHistory &&
+    interactionScore < 60
+  ) {
+    interactionSupport =
+      "high";
+  } else if (
+    hasReliableHistory &&
+    interactionScore >= 80
+  ) {
+    interactionSupport =
+      "low";
+  }
+
+  const recurringTargets =
+    frequentErrors
+      .slice(0, 3)
+      .map((error) => ({
+        type:
+          error?.type || "other",
+
+        wrong:
+          error?.wrong || "",
+
+        correct:
+          error?.correct || "",
+
+        occurrences:
+          Number(
+            error?.occurrences || 1
+          ),
+      }));
+
+  return {
+    hasReliableHistory,
+
+    weakestSkill,
+    strongestSkill,
+
+    correctionMode,
+    interactionSupport,
+
+    maximumCorrectionsPerTurn:
+      correctionMode === "guided"
+        ? 2
+        : 1,
+
+    requestReformulation:
+      correctionMode === "guided",
+
+    praiseSpecificStrength:
+      true,
+
+    recurringTargets,
+  };
+};
+
 export const buildAdaptiveStudentProfile = (
   practiceHistory = []
 ) => {
-  const normalizedHistory =
-    Array.isArray(practiceHistory)
-      ? practiceHistory
-      : [];
+  const history = Array.isArray(
+    practiceHistory
+  )
+    ? practiceHistory
+    : [];
+
+  const completedPractices =
+    history.filter(
+      (practice) =>
+        practice?.status ===
+        "completed"
+    );
 
   const evaluatedPractices =
-    getEvaluatedPractices(
-      normalizedHistory
+    completedPractices.filter(
+      (practice) =>
+        practice?.evaluationStatus ===
+          "evaluated" &&
+        practice?.performance &&
+        typeof practice.performance ===
+          "object"
     );
+
+  const performance = {
+    accuracy: calculateAverage(
+      evaluatedPractices.map(
+        (practice) =>
+          practice.performance
+            ?.accuracy
+      )
+    ),
+
+    grammar: calculateAverage(
+      evaluatedPractices.map(
+        (practice) =>
+          practice.performance
+            ?.grammar
+      )
+    ),
+
+    vocabulary: calculateAverage(
+      evaluatedPractices.map(
+        (practice) =>
+          practice.performance
+            ?.vocabulary
+      )
+    ),
+
+    interaction: calculateAverage(
+      evaluatedPractices.map(
+        (practice) =>
+          practice.performance
+            ?.interaction
+      )
+    ),
+  };
 
   const averageScore =
     calculateAverage(
       evaluatedPractices.map(
         (practice) =>
-          practice?.finalScore
+          practice.finalScore
       )
     );
 
-  const accuracy = calculateAverage(
-    evaluatedPractices.map(
-      (practice) =>
-        practice?.performance?.accuracy
-    )
-  );
-
-  const grammar = calculateAverage(
-    evaluatedPractices.map(
-      (practice) =>
-        practice?.performance?.grammar
-    )
-  );
-
-  const vocabulary = calculateAverage(
-    evaluatedPractices.map(
-      (practice) =>
-        practice?.performance?.vocabulary
-    )
-  );
-
-  const interaction = calculateAverage(
-    evaluatedPractices.map(
-      (practice) =>
-        practice?.performance?.interaction
-    )
-  );
-
   const frequentErrors =
-    calculateFrequentErrors(
-      normalizedHistory
-    );
+    calculateFrequentErrors(history);
+
+  const feedbackStrategy =
+    buildFeedbackStrategy({
+      performance,
+      frequentErrors,
+
+      evaluatedPractices:
+        evaluatedPractices.length,
+    });
 
   const learnedVocabulary =
-    calculateVocabulary(
-      normalizedHistory
+    calculateLearnedVocabulary(
+      history
     );
-
-  const completedTopicIds = [
-    ...new Set(
-      evaluatedPractices
-        .map(
-          (practice) =>
-            practice?.topicId
-        )
-        .filter(Boolean)
-    ),
-  ];
 
   const recommendedDifficulty =
     getRecommendedDifficulty({
       averageScore,
-      grammar,
-      vocabulary,
-      interaction,
+      performance,
     });
+
+  const adaptation = {
+    correctionIntensity:
+      getCorrectionIntensity({
+        grammar:
+          performance.grammar,
+        accuracy:
+          performance.accuracy,
+        frequentErrors,
+      }),
+
+    questionStyle:
+      getQuestionStyle({
+        interaction:
+          performance.interaction,
+        recommendedDifficulty,
+      }),
+
+    responseLength:
+      getResponseLength({
+        interaction:
+          performance.interaction,
+        vocabulary:
+          performance.vocabulary,
+      }),
+
+    scaffoldingLevel:
+      getScaffoldingLevel({
+        grammar:
+          performance.grammar,
+        vocabulary:
+          performance.vocabulary,
+        interaction:
+          performance.interaction,
+      }),
+  };
 
   const teachingPriorities =
     buildTeachingPriorities({
-      grammar,
-      vocabulary,
-      accuracy,
-      interaction,
+      performance,
       frequentErrors,
     });
 
   return {
     hasHistoricalData:
-      normalizedHistory.length > 0,
+      history.length > 0,
 
     hasEvaluatedData:
       evaluatedPractices.length > 0,
 
     totalPracticeSessions:
-      normalizedHistory.length,
+      history.length,
+
+    completedPractices:
+      completedPractices.length,
 
     evaluatedPractices:
       evaluatedPractices.length,
 
     averageScore,
 
-    performance: {
-      accuracy,
-      grammar,
-      vocabulary,
-      interaction,
-    },
+    performance,
 
     skillLevels: {
       accuracy:
-        getSkillLevel(accuracy),
+        getSkillLevel(
+          performance.accuracy
+        ),
 
       grammar:
-        getSkillLevel(grammar),
+        getSkillLevel(
+          performance.grammar
+        ),
 
       vocabulary:
-        getSkillLevel(vocabulary),
+        getSkillLevel(
+          performance.vocabulary
+        ),
 
       interaction:
-        getSkillLevel(interaction),
+        getSkillLevel(
+          performance.interaction
+        ),
     },
 
     recommendedDifficulty,
 
+    frequentErrors,
+
+    learnedVocabulary,
+
     teachingPriorities,
 
-    frequentErrors:
-      frequentErrors
-        .slice(0, 5),
-
-    learnedVocabulary:
-      learnedVocabulary
-        .slice(0, 12),
-
-    completedTopicIds,
+    feedbackStrategy,
+    adaptation,
   };
 };
