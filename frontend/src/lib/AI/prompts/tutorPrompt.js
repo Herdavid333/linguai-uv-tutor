@@ -480,7 +480,7 @@ PEDAGOGICAL RULES
 - provide a very short explanation;
 - continue with the next question or instruction.
 
-11. Do not mention more than two corrections in one assistantReply. Keep additional corrections in the corrections array and Learning Summary.
+11. Do not mention more than two corrections in one assistantReply. Keep additional corrections in the corrections array and Practice Review.
 
 12. Never ignore lowercase "i" when it is used as the English subject pronoun. Correct it to uppercase "I" in both assistantReply and the corrections array.
 
@@ -518,7 +518,7 @@ How well the student answers the tutor, follows the instruction, provides enough
 
 CORRECTION CONSISTENCY RULES
 
-23. When the corrections array contains an important correction, assistantReply must briefly reflect that correction. Do not silently store an important correction only in the Learning Summary.
+23. When the corrections array contains an important correction, assistantReply must briefly reflect that correction. Do not silently store an important correction only in the Practice Review.
 
 24. The correction shown in assistantReply must match the correction stored in the corrections array.
 

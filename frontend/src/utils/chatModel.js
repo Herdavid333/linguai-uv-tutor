@@ -85,7 +85,7 @@ export const getConversation = () => {
 
     /*
       Migración para conversaciones creadas antes del refactor.
-      Si no tenían practiceHistoryId o learningSummary,
+      Si no tenían practiceHistoryId o practiceReview,
       se agregan automáticamente.
     */
     return {

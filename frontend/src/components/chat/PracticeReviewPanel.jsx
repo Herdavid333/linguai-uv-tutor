@@ -8,7 +8,7 @@ import {
   Target,
 } from "lucide-react";
 
-export default function LearningSummaryPanel({
+export default function PracticeReviewPanel({
   isOpen,
   onClose,
 

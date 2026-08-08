@@ -8,8 +8,8 @@ export default function ChatFooter({
   inputMessage,
   onInputChange,
   onSubmit,
-  showLearningSummary,
-  onToggleLearningSummary,
+  showPracticeReview,
+  onTogglePracticeReview,
   onFinishPractice,
   isAssistantTyping,
   isFinishingPractice,
@@ -25,7 +25,7 @@ export default function ChatFooter({
         <button
           type="button"
           onClick={
-            onToggleLearningSummary
+            onTogglePracticeReview
           }
           disabled={
             isFinishingPractice
@@ -42,13 +42,13 @@ export default function ChatFooter({
             disabled:cursor-not-allowed
             disabled:opacity-50
             ${
-              showLearningSummary
-                ? "bg-[#e53935] hover:bg-[#d32f2f]"
-                : "bg-[#8f8f8f] hover:bg-[#7d7d7d]"
+              showPracticeReview
+                ? "bg-[#e53935] hover:bg-red-700"
+                : "bg-[#8f8f8f] hover:bg-red-700"
             }
           `}
         >
-          Learning summary
+          Practice Review
         </button>
 
         <button

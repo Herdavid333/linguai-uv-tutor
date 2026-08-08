@@ -24,7 +24,7 @@ import {
 
 import ChatSideMenu from "../../components/chat/ChatSideMenu";
 import { learningUnits } from "../../data/learningContent";
-import LearningSummaryPanel from "../../components/chat/LearningSummaryPanel";
+import PracticeReviewPanel from "../../components/chat/PracticeReviewPanel";
 import { useAuth } from "../../context/AuthContext";
 import {
   createPracticeHistoryItem,
@@ -117,7 +117,7 @@ export default function ChatPage() {
   const [inputMessage, setInputMessage] = useState("");
   const [isAssistantTyping, setIsAssistantTyping] = useState(false);
   const [showSideMenu, setShowSideMenu] = useState(false);
-  const [showLearningSummary, setShowLearningSummary] = useState(false);
+  const [showPracticeReview, setShowPracticeReview] = useState(false);
   const [animatedAssistantText, setAnimatedAssistantText] = useState("");
   const [isAnimatingAssistant, setIsAnimatingAssistant] = useState(false);
 
@@ -242,9 +242,9 @@ export default function ChatPage() {
   const practiceCreationRef = useRef(null);
   const typingAnimationRef = useRef(null);
 
-  const learningSummary =
-    conversation?.learningSummary ||
-    createEmptyLearningSummary();
+  const learningSummary  =
+    conversation?.learningSummary  ||
+    createEmptyLearningSummary ();
 
 
   /*
@@ -482,7 +482,7 @@ export default function ChatPage() {
       return;
     }
       setShowSideMenu(false);
-      setShowLearningSummary(false);
+      setShowPracticeReview(false);
       setShowChangePracticeModal(false);
       setPendingPracticeContext(null);
 
@@ -1309,6 +1309,11 @@ export default function ChatPage() {
           activityType: context.activityType,
           activityName: context.activityName,
 
+          activityDescription:
+            context.activityDescription || "",
+          
+          activityId: context.activityId || "",
+
           status: "in_progress",
         });
 
@@ -1831,13 +1836,13 @@ export default function ChatPage() {
           <div ref={messagesEndRef} />
         </div>
 
-        <LearningSummaryPanel
+        <PracticeReviewPanel
           isOpen={
-            showLearningSummary
+            showPracticeReview
           }
 
           onClose={() =>
-            setShowLearningSummary(
+            setShowPracticeReview(
               false
             )
           }
@@ -1892,11 +1897,11 @@ export default function ChatPage() {
             )
           }
           onSubmit={handleSendMessage}
-          showLearningSummary={
-            showLearningSummary
+          showPracticeReview={
+            showPracticeReview
           }
-          onToggleLearningSummary={() =>
-            setShowLearningSummary(
+          onTogglePracticeReview={() =>
+            setShowPracticeReview(
               (previous) => !previous
             )
           }
