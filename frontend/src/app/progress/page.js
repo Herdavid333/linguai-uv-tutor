@@ -1,18 +1,17 @@
 "use client";
 
-import Link from "next/link";
 import {
   useEffect,
   useMemo,
   useState,
 } from "react";
-import { Home, User, X } from "lucide-react";
-
-
+import { CircleUser, CircleUserRound, Home, House, User, X } from "lucide-react";
 import ProgressUnitRow from "../../components/progress/ProgressUnitRow";
 import FrequentErrorCard from "../../components/progress/FrequentErrorCard";
 import ActivityHistoryCard from "../../components/progress/ActivityHistoryCard";
 import VocabularyCard from "../../components/progress/VocabularyCard";
+import AppShell from "../../components/layout/AppShell";
+import BottomNavigation from "../../components/layout/BottomNavigation";
 
 import { useAuth } from "../../context/AuthContext";
 
@@ -234,44 +233,70 @@ export default function ProgressPage() {
   }, [user?.uid]);
 
   return (
-    <main className="flex min-h-screen justify-center overflow-hidden bg-[#e6e6e6] px-2 py-2 sm:px-4 sm:py-4">
-      <section className="flex h-[calc(100vh-16px)] sm:h-[calc(100vh-32px)] w-full max-w-[390px] flex-col overflow-hidden rounded-[10px] border-2 border-[#f3a3a3] bg-white shadow-md sm:max-w-[600px] md:max-w-[820px] lg:max-w-[980px]">
-        {/* HEADER */}
-        <header className="shrink-0 border-b-4 border-white bg-[#b8b8b8]">
-          <div className="grid grid-cols-[1fr_1px_1fr] items-center px-4 py-3">
-            <div className="text-center">
-              <h1 className="text-[30px] font-extrabold leading-none text-black">
-                LINGUAI
-              </h1>
-
-              <p className="text-[20px] font-extrabold leading-none text-red-600">
-                UV
-              </p>
-            </div>
-
-            <div className="h-10 bg-white" />
-
-            <p className="text-center text-[16px] font-bold leading-tight text-white">
-              Univalle&apos;s AI tutor for
-              learning English
-            </p>
-          </div>
-        </header>
+    <AppShell
+      footer={
+        <BottomNavigation />
+      }
+    >
 
         {/* CONTENT */}
-        <div className="min-h-0 flex-1 overflow-hidden">
+        <div 
+          className="
+          min-h-0 
+          flex-1 
+          overflow-hidden
+        ">
           {activePanel === "progress" && (
-            <div className="h-full min-h-0 overflow-y-auto overscroll-contain">
+            <div 
+              className="
+                h-full 
+                min-h-0 
+                overflow-y-auto overscroll-contain
+                gap-2
+                px-2
+                py-1
+              ">
+
               {/* OVERALL PROGRESS */}
-              <section className="shrink-0 border-t border-white bg-[#b8b8b8] px-3 py-1">
-                <h2 className="text-[18px] font-extrabold text-black">
-                  Overall Progress
+              <section 
+              className="
+                shrink-0 
+                rounded-lg
+                bg-[#b8b8b8] 
+                px-3 py-1
+                
+              ">
+                <h2 
+                className="
+                  font-extrabold
+                  text-black
+                  text-center
+
+                  lg:text-[20px]
+                  xl:text-[21px]
+                ">
+                Overall Progress
                 </h2>
               </section>
 
-              <section className="px-3 py-3 sm:px-4">
+              <section 
+              className="
+                px-3 py-3 
+                sm:px-4
+              ">
                 {loadingHistory ? (
-                  <p className="py-3 text-center text-[14px] font-bold text-black">
+                  <p 
+                  className="
+                    px-3
+                      py-3
+                      text-center
+                      font-semibold
+                      text-gray-600
+
+                      text-[13px]
+                      md:text-[14px]
+                      lg:text-[17px]
+                  ">
                     Loading progress...
                   </p>
                 ) : (
@@ -288,26 +313,49 @@ export default function ProgressPage() {
                     <article
                       className="
                         rounded-lg
-                        border border-gray-200
+                        border border-gray-300
                         bg-[#fafafa]
-                        p-3
+                        px-4 py-3
                         shadow-sm
+                        leading-tight
                       "
                     >
-                      <p className="text-[16px] font-extrabold text-black">
+                      <p 
+                      className="
+                        font-extrabold
+                        text-red-600
+
+                        text-[13px]
+                        md:text-[14px]
+                        lg:text-[17px]
+                      ">
                         {overallProgress}% completed
                       </p>
 
-                      <div className="mt-2 h-3.5 overflow-hidden rounded-full bg-[#9d9d9d]">
+                      <div className="
+                        mt-2 
+                        h-3.5 overflow-hidden rounded-full 
+                        bg-[#9d9d9d]
+                      ">
                         <div
-                          className="h-full rounded-full bg-red-600 transition-[width] duration-500"
+                          className="
+                            h-full
+                            rounded-full bg-red-600 transition-[width] duration-500"
                           style={{
                             width: `${overallProgress}%`,
                           }}
                         />
                       </div>
 
-                      <p className="mt-2 text-[12px] font-semibold text-gray-600">
+                      <p 
+                        className="
+                          mt-2 
+                          font-semibold text-black
+
+                          text-[13px]
+                          md:text-[14px]
+                          lg:text-[17px]
+                        ">
                         Average score:{" "}
                         {progressStats.averageScore ??
                           "N/A"}
@@ -318,14 +366,18 @@ export default function ProgressPage() {
                     <article
                       className="
                         rounded-lg
-                        border border-gray-200
+                        border border-gray-300
                         bg-[#fafafa]
-                        p-3
-                        text-[14px]
+                        px-4 py-3
                         font-bold
-                        leading-relaxed
+                        leading-tight
                         text-black
                         shadow-sm
+                        text-center
+
+                        text-[13px]
+                        md:text-[14px]
+                        lg:text-[18px]
                       "
                     >
                       <p>
@@ -364,9 +416,9 @@ export default function ProgressPage() {
                         items-center
                         justify-center
                         rounded-lg
-                        border border-gray-200
+                        border border-gray-300
                         bg-[#fafafa]
-                        p-3
+                        px-4 py-3
                         text-center
                         shadow-sm
 
@@ -374,7 +426,16 @@ export default function ProgressPage() {
                         lg:col-span-1
                       "
                     >
-                      <p className="text-[16px] font-extrabold text-black">
+                      <p 
+                        className="
+                          font-extrabold
+                          text-black
+
+                          text-[13px]
+                          md:text-[14px]
+                          lg:text-[25px]
+
+                        ">
                         Learning streak 🔥{" "}
                         {
                           progressStats.learningStreak
@@ -382,30 +443,27 @@ export default function ProgressPage() {
                         {progressStats.learningStreak ===
                         1
                           ? "day"
-                          : "days"}
+                          : "days"} 🔥
                       </p>
                     </article>
                   </div>
                 )}
               </section>
-              {/* =========================================================
-                  PROGRESS DETAILS
-              ========================================================= */}
+
+              {/*PROGRESS DETAILS*/}
               <div
                 className="
                   grid
+                  min-h-0
+                  flex-1
                   grid-cols-1
                   gap-4
-                  px-3
-                  py-3
-                  sm:px-4
-                  lg:grid-cols-[1.15fr_0.85fr]
+
+                  lg:grid-cols-[1.30fr_1fr]
                   lg:items-start
                 "
               >
-                {/* =====================================================
-                    PROGRESS BY UNITS
-                ====================================================== */}
+                {/*PROGRESS BY UNITS */}
                 <section
                   className="
                     flex
@@ -414,20 +472,50 @@ export default function ProgressPage() {
                     flex-col
                     overflow-hidden
                     rounded-lg
-                    border border-gray-200
+                    border border-gray-300
                     bg-white
                     shadow-sm
                   "
                 >
-                  <div className="shrink-0 bg-[#b8b8b8] px-3 py-1.5">
-                    <h2 className="text-[18px] font-extrabold text-black">
+                  <div 
+                    className="
+                    shrink-0 
+                    bg-[#b8b8b8] 
+                    px-3 
+                    py-1.5
+                  ">
+                    <h2 
+                      className="
+                        font-extrabold
+                        text-black
+
+                        lg:text-[20px]
+                        xl:text-[21px]
+                    ">
                       Progress by Units
                     </h2>
                   </div>
 
-                  <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 pr-2">
+                  <div 
+                  className="
+                    min-h-0 
+                    flex-1 
+                    overflow-y-auto 
+                    overscroll-contain 
+                    p-3 pr-2
+                  ">
                     {unitProgress.length === 0 ? (
-                      <p className="py-4 text-center text-[13px] font-bold text-gray-600">
+                      <p 
+                      className="
+                        py-4 
+                        text-center 
+                        font-bold 
+                        text-black
+
+                        text-[14px]
+                        lg:text-[18px]
+                        xl:text-[20px]
+                      ">
                         No units available.
                       </p>
                     ) : (
@@ -446,9 +534,13 @@ export default function ProgressPage() {
                               key={unit.id}
                               className="
                                 rounded-lg
-                                border border-gray-200
-                                bg-[#fafafa]
+                                border
+                                border-[#f3a3a3]
+                                bg-[#ff9c9c]
                                 p-3
+                                transition-all
+                                duration-100
+                                
                               "
                             >
                               <ProgressUnitRow
@@ -460,7 +552,18 @@ export default function ProgressPage() {
                                 }
                               />
 
-                              <div className="mt-2 flex justify-between gap-3 text-[11px] font-semibold text-gray-600">
+                              <div 
+                              className="
+                                mt-2 
+                                flex 
+                                justify-between 
+                                gap-3 
+                                font-semibold text-gray-700
+
+                                text-[13px]
+                                md:text-[14px]
+                                lg:text-[17px]
+                              ">
                                 <span>
                                   {
                                     unit.practicedTopics
@@ -487,26 +590,38 @@ export default function ProgressPage() {
                 </section>
 
                 <div className="flex flex-col gap-3">
-                  {/* =====================================================
-                      PERFORMANCE
-                  ====================================================== */}
+                  {/*PERFORMANCE*/}
                   <section
                     className="
                       overflow-hidden
                       rounded-lg
-                      border border-gray-200
+                      border border-gray-300
                       bg-white
                       shadow-sm
                     "
                   >
-                    <div className="flex items-center justify-between bg-[#b8b8b8] px-3 py-1.5">
-                      <h2 className="text-[18px] font-extrabold text-black">
+                    <div 
+                    className="
+                      flex 
+                      items-center 
+                      justify-between 
+                      bg-[#b8b8b8] 
+                      px-3 py-1.5
+                    ">
+                      <h2 
+                      className="
+                        font-extrabold 
+                        text-black
+
+                        lg:text-[20px]
+                        xl:text-[21px]
+                      ">
                         Performance
                       </h2>
 
                       {performanceStats.overallPerformance !==
                         null && (
-                        <span className="text-[13px] font-extrabold text-red-600">
+                        <span className="text-[15px] font-extrabold text-red-600">
                           Overall:{" "}
                           {
                             performanceStats.overallPerformance
@@ -518,16 +633,53 @@ export default function ProgressPage() {
 
                     <div className="p-3">
                       {loadingHistory ? (
-                        <p className="py-4 text-center text-[14px] font-bold text-black">
+                        <p 
+                        className="
+                          py-4 
+                          text-center 
+                          font-bold 
+                          text-black
+
+                          text-[13px]
+                          md:text-[14px]
+                          lg:text-[17px]
+                        ">
                           Loading performance...
                         </p>
                       ) : !performanceStats.hasPerformanceData ? (
-                        <div className="flex min-h-[150px] flex-col items-center justify-center px-4 text-center">
-                          <p className="text-[15px] font-extrabold text-black">
+                        <div 
+                        className="
+                          flex 
+                          min-h-[150px] 
+                          flex-col 
+                          items-center 
+                          justify-center 
+                          px-4 
+                          text-center"
+                        >
+                          <p 
+                          className="
+                            font-extrabold 
+                            text-red-600
+
+                            text-[13px]
+                            md:text-[14px]
+                            lg:text-[18px]
+                          ">
                             No performance results yet
                           </p>
 
-                          <p className="mt-2 text-[13px] font-semibold leading-snug text-gray-600">
+                          <p 
+                          className="
+                            mt-2 
+                            font-semibold 
+                            leading-snug 
+                            text-gray-600
+
+                            text-[13px]
+                            md:text-[14px]
+                            lg:text-[18px]
+                          ">
                             Complete a practice with
                             enough interactions to unlock
                             your performance results.
@@ -555,7 +707,17 @@ export default function ProgressPage() {
                             value={performanceStats.interaction}
                           />
 
-                          <p className="pt-2 text-center text-[11px] font-semibold text-gray-500">
+                          <p 
+                          className="
+                            pt-2 
+                            text-center 
+                            font-semibold 
+                            text-black
+
+                            text-[13px]
+                            md:text-[14px]
+                            lg:text-[17px]
+                          ">
                             Based on{" "}
                             {performanceStats.evaluatedPractices}{" "}
                             {performanceStats.evaluatedPractices === 1
@@ -569,7 +731,12 @@ export default function ProgressPage() {
 
                   {/* ACTION BUTTONS - DESKTOP */}
                   <section className="hidden lg:block">
-                    <div className="grid grid-cols-1 gap-3">
+                    <div 
+                    className="
+                      grid 
+                      grid-cols-1 
+                      gap-3
+                    ">
                       <button
                         type="button"
                         onClick={() =>
@@ -580,7 +747,6 @@ export default function ProgressPage() {
                           rounded-md
                           bg-red-600
                           px-3 py-2
-                          text-[15px]
                           font-extrabold
                           text-white
                           shadow
@@ -589,6 +755,10 @@ export default function ProgressPage() {
                           hover:bg-red-700
                           active:translate-y-[2px]
                           active:scale-95
+
+                          text-[18px]
+                          md:text-[20px]
+                          lg:text-[24px]
                         "
                       >
                         Frequent Errors
@@ -604,7 +774,6 @@ export default function ProgressPage() {
                           rounded-md
                           bg-red-600
                           px-3 py-2
-                          text-[15px]
                           font-extrabold
                           text-white
                           shadow
@@ -613,6 +782,10 @@ export default function ProgressPage() {
                           hover:bg-red-700
                           active:translate-y-[2px]
                           active:scale-95
+
+                          text-[18px]
+                          md:text-[20px]
+                          lg:text-[24px]
                         "
                       >
                         Vocabulary Learned
@@ -628,7 +801,6 @@ export default function ProgressPage() {
                           rounded-md
                           bg-red-600
                           px-3 py-2
-                          text-[15px]
                           font-extrabold
                           text-white
                           shadow
@@ -637,6 +809,10 @@ export default function ProgressPage() {
                           hover:bg-red-700
                           active:translate-y-[2px]
                           active:scale-95
+
+                          text-[18px]
+                          md:text-[20px]
+                          lg:text-[24px]
                         "
                       >
                         Activity History
@@ -646,7 +822,13 @@ export default function ProgressPage() {
                 </div>
               </div>    
 
-              <section className="px-3 pb-3 sm:px-4 lg:hidden">
+              <section 
+              className="
+                px-3 
+                pb-3 
+                sm:px-4 
+                lg:hidden
+              ">
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
@@ -658,13 +840,16 @@ export default function ProgressPage() {
                       rounded-md
                       bg-red-600
                       px-3 py-2
-                      text-[15px]
                       font-extrabold
                       text-white
                       shadow
                       transition-all
                       hover:bg-red-700
                       active:scale-95
+
+                      text-[18px]
+                      md:text-[20px]
+                      lg:text-[24px]
                     "
                   >
                     Frequent Errors
@@ -680,13 +865,16 @@ export default function ProgressPage() {
                       rounded-md
                       bg-red-600
                       px-3 py-2
-                      text-[15px]
                       font-extrabold
                       text-white
                       shadow
                       transition-all
                       hover:bg-red-700
                       active:scale-95
+
+                      text-[18px]
+                      md:text-[20px]
+                      lg:text-[24px]
                     "
                   >
                     Vocabulary Learned
@@ -703,13 +891,16 @@ export default function ProgressPage() {
                       rounded-md
                       bg-red-600
                       px-3 py-2
-                      text-[15px]
                       font-extrabold
                       text-white
                       shadow
                       transition-all
                       hover:bg-red-700
                       active:scale-95
+
+                      text-[18px]
+                      md:text-[20px]
+                      lg:text-[24px]
                     "
                   >
                     Activity History
@@ -721,7 +912,13 @@ export default function ProgressPage() {
 
           {/* FREQUENT ERRORS */}
           {activePanel === "errors" && (
-            <div className="flex h-full min-h-0 flex-col">
+            <div 
+            className="
+              flex 
+              h-full 
+              min-h-0 
+              flex-col
+            ">
               <PanelHeader
                 title="Frequent Errors"
                 onClose={() =>
@@ -729,8 +926,20 @@ export default function ProgressPage() {
                 }
               />
 
-              <div className="shrink-0 border-b border-black px-3 py-2 text-center">
-                <p className="text-[16px] font-extrabold text-black underline">
+              <div 
+              className="
+                shrink-0    
+                px-3 py-3
+                text-center
+              ">
+                <p className="
+                  font-bold 
+                  text-black 
+             
+                  text-[13px]
+                  md:text-[14px]
+                  lg:text-[20px]
+                ">
                   Understand your most common errors
                 </p>
               </div>
@@ -742,20 +951,50 @@ export default function ProgressPage() {
                   overflow-y-auto
                   overscroll-contain
                   px-4
-                  py-3
+                  py-1
                 "
               >
                 {loadingHistory ? (
-                  <p className="py-5 text-center text-[14px] font-bold text-black">
+                  <p className="
+                    py-5 
+                    text-center  
+                    font-bold 
+                    text-black
+
+                    text-[13px]
+                    md:text-[14px]
+                    lg:text-[17px]
+                  ">
                     Loading frequent errors...
                   </p>
                 ) : frequentErrors.length === 0 ? (
-                  <div className="flex min-h-[180px] flex-col items-center justify-center px-5 text-center">
-                    <p className="text-[15px] font-extrabold text-black">
+                  <div className="
+                    flex 
+                    min-h-[180px] 
+                    flex-col 
+                    items-center 
+                    justify-center 
+                    px-5 
+                    text-center
+                  ">
+                    <p className="
+                      text-[15px] 
+                      font-extrabold 
+                      text-black
+                    ">
                       No frequent errors yet
                     </p>
 
-                    <p className="mt-2 text-[13px] font-semibold leading-snug text-gray-600">
+                    <p className="
+                      mt-2
+                      font-semibold 
+                      leading-snug 
+                      text-gray-600
+
+                      text-[13px]
+                      md:text-[14px]
+                      lg:text-[17px]
+                    ">
                       Your corrections will appear here as you continue practicing.
                     </p>
                   </div>
@@ -813,7 +1052,12 @@ export default function ProgressPage() {
 
           {/* VOCABULARY */}
           {activePanel === "vocabulary" && (
-            <div className="flex h-full min-h-0 flex-col">
+            <div className="
+              flex 
+              h-full 
+              min-h-0 
+              flex-col
+            ">
               <PanelHeader
                 title="Vocabulary Learned"
                 onClose={() =>
@@ -821,12 +1065,31 @@ export default function ProgressPage() {
                 }
               />
 
-              <div className="shrink-0 border-b border-black px-3 py-2 text-center">
-                <p className="text-[18px] font-extrabold text-black">
+              <div className="
+              shrink-0 
+              px-3 py-2 
+              text-center
+              ">
+                <p className="
+                  font-bold 
+                  text-black 
+             
+                  text-[13px]
+                  md:text-[14px]
+                  lg:text-[20px]
+                ">
                   Review your learned words
                 </p>
 
-                <p className="mt-1 text-[12px] font-semibold text-gray-600">
+                <p className="
+                  mt-1
+                  font-extrabold 
+                  text-red-600
+
+                  text-[13px]
+                  md:text-[14px]
+                  lg:text-[20px]
+                ">
                   {vocabularyStats.totalWords}{" "}
                   {vocabularyStats.totalWords === 1
                     ? "word learned"
@@ -845,7 +1108,16 @@ export default function ProgressPage() {
                 "
               >
                 {vocabularyStats.words.length === 0 ? (
-                  <p className="py-5 text-center text-[14px] font-bold text-gray-600">
+                  <p className="
+                    py-5 
+                    text-center
+                    font-bold 
+                    text-gray-600
+
+                    text-[13px]
+                    md:text-[14px]
+                    lg:text-[20px]
+                  ">
                     No vocabulary has been registered yet.
                   </p>
                 ) : (
@@ -1006,7 +1278,14 @@ export default function ProgressPage() {
 
           {/* ACTIVITY HISTORY */}
           {activePanel === "history" && (
-            <div className="min-h-0 flex h-full flex-col overflow-y-auto px-4 py-3">
+            <div className="
+              min-h-0 
+              flex 
+              h-full 
+              flex-col 
+              overflow-y-auto 
+              px-4 py-3
+            ">
               <PanelHeader
                 title="Activity History"
                 onClose={() =>
@@ -1014,14 +1293,35 @@ export default function ProgressPage() {
                 }
               />
 
-              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3">
+              <div className="
+                min-h-0 
+                flex-1 
+                overflow-y-auto 
+                overscroll-contain 
+                px-4 py-3
+              ">
                 {loadingHistory ? (
-                  <p className="text-center text-[14px] font-bold text-black">
+                  <p className="
+                    text-center 
+                    font-bold text-black
+
+                    text-[13px]
+                    md:text-[14px]
+                    lg:text-[20px]
+                  ">
                     Loading activity history...
                   </p>
                 ) : sortedPracticeHistory.length ===
                   0 ? (
-                  <p className="text-center text-[14px] font-bold text-black">
+                  <p className="
+                    text-center 
+                    font-bold 
+                    text-black
+
+                    text-[13px]
+                    md:text-[14px]
+                    lg:text-[20px]
+                  ">
                     No practice sessions registered
                     yet.
                   </p>
@@ -1079,43 +1379,7 @@ export default function ProgressPage() {
             </div>
           )}
         </div>
-
-        {/* FOOTER NAV */}
-        <nav className="shrink-0 border-t border-black bg-[#b8b8b8] px-4 py-2">
-          <div className="grid grid-cols-[1fr_2px_1fr] items-center text-center">
-            <Link
-              href="/home"
-              className="flex flex-col items-center gap-1 rounded-md py-1 text-black hover:scale-[1.1] active:translate-y-[2px] active:scale-95"
-            >
-              <Home
-                size={34}
-                className="fill-black"
-              />
-
-              <span className="text-[15px] font-bold">
-                Home
-              </span>
-            </Link>
-
-            <div className="h-full bg-white" />
-
-            <Link
-              href="/profile"
-              className="flex flex-col items-center gap-1 rounded-md py-1 text-black hover:scale-[1.1] active:translate-y-[2px] active:scale-95"
-            >
-              <User
-                size={34}
-                className="fill-black"
-              />
-
-              <span className="text-[15px] font-bold">
-                My Profile
-              </span>
-            </Link>
-          </div>
-        </nav>
-      </section>
-    </main>
+      </AppShell>
   );
 }
 
@@ -1206,8 +1470,21 @@ function PanelHeader({
   onClose,
 }) {
   return (
-    <section className="relative border-b border-black bg-[#b8b8b8] px-3 py-1">
-      <h2 className="text-center text-[20px] font-extrabold text-black">
+    <section className="
+      relative 
+      
+      bg-[#b8b8b8] 
+      px-3 py-1
+    ">
+      <h2 className="
+        text-center 
+        font-extrabold 
+        text-black
+
+        text-[13px]
+        md:text-[14px]
+        lg:text-[30px]
+      ">
         {title}
       </h2>
 
@@ -1215,11 +1492,22 @@ function PanelHeader({
         type="button"
         onClick={onClose}
         aria-label={`Close ${title}`}
-        className="absolute right-2 top-1 rounded-full p-1 text-red-600 transition duration-100 hover:text-red-700 active:translate-y-[1px] active:scale-90"
-      >
+        className="
+          absolute
+          right-3
+          top-1/2
+          -translate-y-1/2
+          rounded-full
+          p-1
+          text-red-600
+          transition
+          hover:bg-white/40
+          hover:text-red-700
+          active:scale-90
+        ">
         <X
-          size={24}
-          strokeWidth={3}
+          size={30}
+          strokeWidth={4}
         />
       </button>
     </section>
@@ -1248,7 +1536,15 @@ function FrequentErrorGroupCard({
           py-2
         "
       >
-        <h3 className="text-[17px] font-extrabold text-white">
+        <h3 className="
+          font-extrabold 
+          text-white
+
+          text-[17px]
+          md:text-[18px]
+          lg:text-[20px]
+          xl:text-[21px]
+        ">
           {group.category}
         </h3>
 
@@ -1258,9 +1554,13 @@ function FrequentErrorGroupCard({
             bg-white
             px-2
             py-1
-            text-[11px]
             font-extrabold
             text-red-600
+
+            text-[14px]
+            md:text-[14px]
+            lg:text-[15px]
+            xl:text-[17px]
           "
         >
           {group.totalOccurrences}{" "}

@@ -9,7 +9,18 @@ export default function FeedbackSettingsPanel() {
   const [highlightErrors, setHighlightErrors] = useState(true);
 
   return (
-    <div className="bg-[#9d9d9d] px-4 py-4 shadow-md border border-gray-500 min-h-[170px] flex flex-col justify-evenly">
+    <div className="
+      bg-[#e5e5e5] 
+      px-4 py-4 
+      shadow-md
+      min-h-[170px] 
+      flex flex-col 
+      justify-evenly
+
+      lg:min-h-[210px]
+      lg:px-6
+      lg:py-5
+    ">
       <SettingSwitch
         label="Show corrections automatically"
         value={showCorrections}

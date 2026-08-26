@@ -11,11 +11,20 @@ export default function AuthButton({
       disabled={disabled}
       onClick={onClick}
       className={`
-        w-full
-        rounded-[4px]
+        mx-auto
+        block
+        w-[80%]
+
+        rounded-[6px]
         bg-red-600
+
+        px-5
+        py-3
+
+        text-[16px]
         font-bold
         text-white
+
         shadow-sm
 
         transition-all
@@ -24,11 +33,14 @@ export default function AuthButton({
         hover:bg-red-700
         hover:scale-[1.01]
 
-        active:scale-95
+        active:scale-[0.98]
         active:translate-y-[2px]
 
         disabled:cursor-not-allowed
         disabled:opacity-60
+
+        sm:text-[17px]
+        lg:text-[18px]
 
         ${className}
       `}

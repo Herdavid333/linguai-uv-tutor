@@ -1,13 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   BarChart3,
   Home,
   Pencil,
-  Settings,
   User,
   Volume2,
   Globe,
@@ -16,6 +14,8 @@ import {
   Bell,
   Eye,
   X,
+  House,
+  ChartNoAxesCombined,
 } from "lucide-react";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
 import {
@@ -34,8 +34,11 @@ import LanguageSettingsPanel from "../../components/settings/LanguageSettingsPan
 import FeedbackSettingsPanel from "../../components/settings/FeedbackSettingsPanel";
 import PracticeDifficultySettingsPanel from "../../components/settings/PracticeDifficultySettingsPanel";
 import NotificationsSettingsPanel from "../../components/settings/NotificationsSettingsPanel";
+import AppShell from "../../components/layout/AppShell";
+import BottomNavigation from "../../components/layout/BottomNavigation";
 
 import { db, auth } from "../../lib/firebase";
+
 export default function ProfilePage() {
   const router = useRouter();
   const { user, refreshUserData } = useAuth();
@@ -267,485 +270,1330 @@ export default function ProfilePage() {
   ];
 
   return (
-    <main className="min-h-screen bg-[#e6e6e6] flex justify-center px-4 py-6 overflow-hidden">
-      <section className="w-full max-w-[390px] bg-white border-2 border-[#f3a3a3] rounded-[10px] shadow-md overflow-hidden flex flex-col justify-evenly">
-        {/* HEADER */}
-        <header className="shrink-0 bg-[#b8b8b8] ">
-          <div className="grid grid-cols-[1fr_1px_1fr] items-center px-4 py-3">
-            <div className="text-center">
-              <h1 className="text-[30px] font-extrabold leading-none text-black">
-                LINGUAI
-              </h1>
-              <p className="text-[20px] font-extrabold leading-none text-red-600">
-                UV
-              </p>
-            </div>
+    <AppShell
+      footer={
+        <BottomNavigation /> 
+      }
+    >
+        {/* MAIN PROFILE CONTENT */}
+        <div
+          className="
+            min-h-0
+            flex-1
+            overflow-y-auto
+            px-3
+            py-3
 
-            <div className="h-10 bg-white" />
+            sm:px-4
+            sm:py-4
 
-            <p className="text-center text-[16px] font-bold leading-tight text-white">
-              Univalle&apos;s AI tutor for learning English
-            </p>
-          </div>
-        </header>
+            lg:grid
+            lg:grid-cols-[0.85fr_1.15fr]
+            lg:gap-4
+            lg:overflow-hidden
+          "
+        >
+          {/* =====================================================
+              LEFT COLUMN - PROFILE
+          ====================================================== */}
+          <section
+            className="
+              flex
+              min-h-0
+              flex-col
+              overflow-hidden
+              rounded-lg
+              border
+              border-gray-300
+              bg-white
+              shadow-sm
+            "
+          >
+            {/* HEADER */}
+            <div
+              className="
+                shrink-0
+                bg-[#b8b8b8]
+                px-4
+                py-2
+              "
+            >
+              <h2
+                className="
+                  text-center
+                  font-extrabold
+                  text-black
 
-        {/* PROFILE MAIN */}
-        <section className="px-6 py-5">
-          <div className="-mt-2 -ml-2 grid grid-cols-[70px_1fr] gap-9 items-start">
-            <div className="flex flex-col items-center w-fit">
-              <div className="h-24 w-24 rounded-full bg-[#9d9d9d] flex items-center justify-center overflow-hidden">
-                {profileImage ? (
-                  <img
-                    src={profileImage}
-                    alt="Profile"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <User size={42} className="text-black fill-black" />
-                )}
-              </div>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleProfileImageChange}
-                className="hidden"
-              />
-
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="mt-2 w-full flex items-center justify-center gap-2 text-[12px] text-black transition duration-100 active:scale-95 active:translate-y-[1px] underline hover:text-red-600"
+                  text-[18px]
+                  md:text-[20px]
+                  lg:text-[25px]
+                "
               >
-                Edit <Pencil size={12} />
-              </button>
-            </div>
-
-            <div>
-              <h2 className="text-[20px] font-extrabold text-black leading-tight">
                 My Profile
               </h2>
-              <p className="text-[16px] font-bold text-black leading-tight">{firstName}</p>
-              <p className="text-[16px] font-semibold text-black leading-tight">{role}</p>
-              <p className="text-[16px] underline text-cyan-600 leading-tight">{email}</p>
             </div>
-          </div>
 
-          <AuthButton
-            onClick={handleOpenEdit}
-            type="button"
-            className="mt-5 py-1.5 text-[18px] sm:text-[20px]"
+            {/* CONTENT */}
+            <div
+              className="
+                flex
+                min-h-0
+                flex-1
+                flex-col
+                p-4
+
+                sm:p-5
+                lg:p-4
+              "
+            >
+              {/* =================================================
+                  PROFILE INFO
+              ================================================== */}
+              <div
+                className="
+                  flex
+                  items-start
+                  gap-4
+                  
+                  lg:gap-5
+                "
+              >
+                {/* PHOTO */}
+                <div
+                  className="
+                    flex
+                    shrink-0
+                    flex-col
+                    items-center
+                  "
+                >
+                  <div
+                    className="
+                      flex
+                      h-20
+                      w-20
+                      items-center
+                      justify-center
+                      overflow-hidden
+                      rounded-full
+                      border
+                      border-black
+                      bg-[#9d9d9d]
+
+                      sm:h-24
+                      sm:w-24
+
+                      lg:h-28
+                      lg:w-29
+                    "
+                  >
+                    {profileImage ? (
+                      <img
+                        src={profileImage}
+                        alt="Profile"
+                        className="
+                          h-full
+                          w-full
+                          object-cover
+                        "
+                      />
+                    ) : (
+                      <User
+                        size={48}
+                        className="
+                          fill-black
+                          text-black
+                        "
+                      />
+                    )}
+                  </div>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={
+                      handleProfileImageChange
+                    }
+                    className="hidden"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      fileInputRef.current?.click()
+                    }
+                    className="
+                      mt-2
+                      flex
+                      items-center
+                      gap-1
+                      font-semibold
+                      text-red-600
+                      underline
+                      transition
+                      hover:text-red-600
+                      active:scale-95
+
+                      text-[14px]
+                      lg:text-[16px]
+                    "
+                  >
+                    Edit
+                    <Pencil size={15} />
+                  </button>
+                </div>
+
+                {/* USER DATA */}
+                <div
+                  className="
+                    min-w-0
+                    flex-1
+                  "
+                >
+                  <h3
+                    className="
+                      break-words
+                      font-extrabold
+                      text-black
+
+                      text-[18px]
+                      md:text-[20px]
+                      lg:text-[25px]
+                    "
+                  >
+                    {firstName}
+                  </h3>
+
+                  <p
+                    className="
+                      mt-1
+                      font-semibold
+                      capitalize
+                      text-gray-700
+
+                      text-[16px]
+                      lg:text-[19px]
+                    "
+                  >
+                    {role}
+                  </p>
+
+                  <p
+                    className="
+                      mt-1
+                      break-all
+                      font-semibold
+                      text-cyan-600
+                      underline
+
+                      text-[16px]
+                      lg:text-[19px]
+                    "
+                  >
+                    {email}
+                  </p>
+                </div>
+              </div>
+              {/* =================================================
+                  LEARNING SUMMARY CARD
+              ================================================== */}
+              <div
+                className="
+                  mt-auto
+                  mb-auto
+                  overflow-hidden
+                  rounded-lg
+                  border
+                  border-gray-300
+                  bg-gray-100
+                  shadow-sm
+                "
+              >
+                {/* ENGLISH LEVEL */}
+                <div
+                  className="
+                    px-4
+                    py-5
+                    text-center
+
+                    lg:px-5
+                    lg:py-6
+                  "
+                >
+                  <p
+                    className="
+                      font-semibold
+                      text-gray-600
+
+                      text-[14px]
+                      md:text-[15px]
+                      lg:text-[18px]
+                    "
+                  >
+                    Based on your performance
+                  </p>
+
+                  <p
+                    className="
+                      mt-2
+                      font-extrabold
+                      text-red-600
+
+                      text-[20px]
+                      md:text-[22px]
+                      lg:text-[26px]
+                    "
+                  >
+                    {englishLevel}
+                  </p>
+                </div>
+
+                {/* DIVIDER */}
+                <div
+                  className="
+                    mx-4
+                    border-t
+                    border-black
+
+                    lg:mx-5
+                  "
+                />
+
+                {/* LEARNING GOAL */}
+                <div
+                  className="
+                    px-4
+                    py-5
+                    text-center
+
+                    lg:px-5
+                    lg:py-6
+                  "
+                >
+                  <p
+                    className="
+                      font-semibold
+                      text-gray-600
+
+                      text-[14px]
+                      md:text-[15px]
+                      lg:text-[18px]
+                    "
+                  >
+                    Learning Goal
+                  </p>
+
+                  <p
+                    className="
+                      mt-auto
+                      break-words
+                      font-extrabold
+                      text-red-600
+
+                      text-[20px]
+                      md:text-[22px]
+                      lg:text-[25px]
+                    "
+                  >
+                    {learningGoal || "Not defined yet"}
+                  </p>
+                </div>
+              </div>
+
+              {/* =================================================
+                  EDIT PROFILE BUTTON
+              ================================================== */}
+              <AuthButton
+                onClick={handleOpenEdit}
+                type="button"
+                className="
+                  mx-auto
+                
+                  mt-auto
+                  block
+                  w-[85%]
+
+                  sm:w-[75%]
+                  lg:w-[80%]
+
+                  lg:text-[25px]
+                "
+              >
+                Edit Profile Info
+              </AuthButton>
+            </div>
+          </section>
+
+          {/* =====================================================
+              RIGHT COLUMN - SETTINGS
+          ====================================================== */}
+          <section
+            className="
+              mt-4
+              flex
+              min-h-0
+              flex-col
+              overflow-hidden
+              rounded-lg
+              border
+              border-gray-300
+              bg-white
+              shadow-sm
+
+              lg:mt-0
+            "
           >
-            Edit Profile information
-          </AuthButton>
-
-          <div className="mt-6 border-y border-black py-3 text-center">
-            <p className="text-[16px] font-semibold text-black">
-              Base in your performance:
-            </p>
-            <p className="text-[20px] font-extrabold text-black">
-              English Level : {englishLevel}
-            </p>
-          </div>
-
-          <h3 className="mt-3 text-center text-[18px] font-extrabold text-black">
-            Settings
-          </h3>
-
-          <div className="relative mt-3 min-h-[225px]">
-            {activeSetting === null && (
-              <div className="space-y-2">
-                <SettingRow
-                  icon={<Volume2 size={18} />}
-                  label="Voice settings"
-                  onClick={() => setActiveSetting("voice")}
-                />
-
-                <SettingRow
-                  icon={<Globe size={18} />}
-                  label="Language settings"
-                  onClick={() => setActiveSetting("language")}
-                />
-
-                <SettingRow
-                  icon={<MessageSquareText size={18} />}
-                  label="Feedback settings"
-                  onClick={() => setActiveSetting("feedback")}
-                />
-
-                <SettingRow
-                  icon={<SlidersHorizontal size={18} />}
-                  label="Practice difficulty"
-                  onClick={() => setActiveSetting("practiceDifficulty")}
-                />
-
-                <SettingRow
-                  icon={<Bell size={18} />}
-                  label="Notifications"
-                  onClick={() => setActiveSetting("notifications")}
-                />
-              </div>
-            )}
-
-            {activeSetting === "voice" && (
-              <div>
-                <SettingRow
-                  icon={<Volume2 size={18} />}
-                  label="Voice settings"
-                  isActive
-                  onClick={() => setActiveSetting(null)}
-                />
-
-                <VoiceSettingsPanel />
-              </div>
-            )}
-
-            {activeSetting === "language" && (
-              <div>
-                <SettingRow
-                  icon={<Globe size={18} />}
-                  label="Language settings"
-                  isActive
-                  onClick={() => setActiveSetting(null)}
-                />
-
-                <LanguageSettingsPanel />
-              </div>
-            )}
-
-            {activeSetting === "feedback" && (
-              <div>
-                <SettingRow
-                  icon={<MessageSquareText size={18} />}
-                  label="Feedback settings"
-                  isActive
-                  onClick={() => setActiveSetting(null)}
-                />
-
-                <FeedbackSettingsPanel />
-              </div>
-            )}
-
-            {activeSetting === "practiceDifficulty" && (
-              <div>
-                <SettingRow
-                  icon={<SlidersHorizontal size={18} />}
-                  label="Practice difficulty"
-                  isActive
-                  onClick={() => setActiveSetting(null)}
-                />
-
-                <PracticeDifficultySettingsPanel />
-              </div>
-            )}
-
-            {activeSetting === "notifications" && (
-              <div>
-                <SettingRow
-                  icon={<Bell size={18} />}
-                  label="Notifications"
-                  isActive
-                  onClick={() => setActiveSetting(null)}
-                />
-
-                <NotificationsSettingsPanel />
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* FOOTER NAV */}
-        <nav className="border-t border-black bg-[#b8b8b8] px-4 py-2">
-          <div className="grid grid-cols-[1fr_2px_1fr] items-center text-center">
-            <Link
-              href="/home"
+            <div
               className="
-                  flex flex-col items-center gap-1 text-black
-                  hover:scale-[1.1]
-                  active:scale-95
-                  active:translate-y-[2px]
-                  rounded-md
-                  py-1
-                  "
+                shrink-0
+                bg-[#b8b8b8]
+                px-4
+                py-2
+              "
             >
-              <Home size={34} className="fill-black" />
-              <span className="text-[15px] font-bold">Home</span>
-            </Link>
+              <h2
+                className="
+                  text-center
+                  font-extrabold
+                  text-black
 
-            <div className="h-full bg-white" />
+                  text-[18px]
+                  md:text-[20px]
+                  lg:text-[25px]
+                "
+              >
+                Settings
+              </h2>
+            </div>
 
-            <Link
-              href="/progress"
+            <div
               className="
-                  flex flex-col items-center gap-1 text-black
-                  hover:scale-[1.1]
-                  active:scale-95
-                  active:translate-y-[2px]
-                  rounded-md
-                  py-1
-                  "
+                min-h-0
+                flex-1
+                p-3
+
+                sm:p-4
+              "
             >
-              <BarChart3 size={34} />
-              <span className="text-[15px] font-bold">My Progress</span>
-            </Link>
-          </div>
-        </nav>
+              {activeSetting === null ? (
+                <div
+                  className="
+                    flex
+                    h-full
+                    min-h-0
+                    flex-col
+                  "
+                >
+                  {/* SETTINGS LIST */}
+                  <div className="space-y-3">
+                    <SettingRow
+                      icon={<Volume2 size={24} />}
+                      label="Voice settings"
+                      onClick={() =>
+                        setActiveSetting("voice")
+                      }
+                    />
+
+                    <SettingRow
+                      icon={<Globe size={24} />}
+                      label="Language settings"
+                      onClick={() =>
+                        setActiveSetting("language")
+                      }
+                    />
+
+                    <SettingRow
+                      icon={
+                        <MessageSquareText
+                          size={24}
+                        />
+                      }
+                      label="Feedback settings"
+                      onClick={() =>
+                        setActiveSetting("feedback")
+                      }
+                    />
+
+                    <SettingRow
+                      icon={
+                        <SlidersHorizontal
+                          size={24}
+                        />
+                      }
+                      label="Practice difficulty"
+                      onClick={() =>
+                        setActiveSetting(
+                          "practiceDifficulty"
+                        )
+                      }
+                    />
+
+                    <SettingRow
+                      icon={<Bell size={24} />}
+                      label="Notifications"
+                      onClick={() =>
+                        setActiveSetting(
+                          "notifications"
+                        )
+                      }
+                    />
+                  </div>
+
+                  {/* SETTINGS INFORMATION */}
+                  <div
+                    className="
+                      mt-auto
+                      rounded-lg
+                      border
+                      border-gray-300
+                      bg-gray-100
+                      px-5
+                      py-4
+                    "
+                  >
+                    <h3
+                      className="
+                        grid
+                        grid-cols-1
+                        gap-4
+                        items-center
+
+                        lg:grid-cols-2
+                        lg:gap-4
+                      "
+                    >
+                      {/* LEFT COLUMN */}
+                      <div
+                        className="
+                          text-center
+                          lg:text-left
+                        "
+                      >
+                        <p
+                          className="
+                            mt-auto
+                            font-extrabold
+                            text-black
+
+                            text-[15px]
+                            md:text-[17px]
+                            lg:text-[19px]
+                          "
+                        >
+                          Personalize your experience
+                        </p>
+
+                        <p
+                          className="
+                            mt-2
+                            font-semibold
+                            leading-relaxed
+                            text-gray-600
+
+                            text-[12px]
+                            md:text-[13px]
+                            lg:text-[16px]
+                          "
+                        >
+                          Customize how LINGUAI
+                          communicates with you and
+                          adapts your practice sessions.
+                        </p>
+                      </div>
+
+                      {/* RIGHT COLUMN */}
+                      <div
+                        className="
+                          border-t
+                          border-gray-300
+                          pt-4
+                          text-center
+
+                          lg:border-t-0
+                          lg:border-l
+                          lg:pl-6
+                          lg:pt-0
+                          lg:text-left
+                        "
+                      >
+                        <p
+                          className="
+                            font-extrabold
+                            text-black
+
+                            text-[14px]
+                            md:text-[15px]
+                            lg:text-[19px]
+                          "
+                        >
+                          Your preferences matter
+                        </p>
+
+                        <p
+                          className="
+                            mt-2
+                            font-semibold
+                            leading-relaxed
+                            text-gray-600
+
+                            text-[12px]
+                            md:text-[13px]
+                            lg:text-[16px]
+                          "
+                        >
+                          Your settings help create a
+                          learning experience that better
+                          matches your needs and study
+                          preferences.
+                        </p>
+                      </div>
+                    </h3>
+                  </div>
+                </div>
+              ) : (
+                <ActiveSettingPanel
+                  activeSetting={activeSetting}
+                  onBack={() =>
+                    setActiveSetting(null)
+                  }
+                />
+              )}
+            </div>
+          </section>
+        </div>
 
         {/* EDIT PROFILE MODAL */}
         {showEditModal && (
-          <Modal>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="rounded-md bg-[#555] px-4 py-1 text-white font-bold text-[18px]">
-                Edit Profile information
+          <Modal maxWidth="max-w-[860px]">
+            {/* HEADER */}
+            <div
+              className="
+                relative
+                flex
+                items-center
+                justify-center
+                bg-[#b8b8b8]
+                px-5
+                py-3
+              "
+            >
+              <h3
+                className="
+                  text-center
+                  font-extrabold
+                  text-black
+
+                  text-[20px]
+                  md:text-[23px]
+                  lg:text-[28px]
+                "
+              >
+                Edit Profile Information
               </h3>
 
               <button
-                onClick={() => setShowEditModal(false)}
+                type="button"
+                onClick={() =>
+                  setShowEditModal(false)
+                }
+                aria-label="Close edit profile"
                 className="
+                  absolute
+                  right-3
+                  top-1/2
+                  -translate-y-1/2
                   rounded-full
                   p-1
                   text-red-600
-                  transition duration-100
-                  active:scale-90
-                  active:translate-y-[1px]
+                  transition
+                  hover:bg-white/40
                   hover:text-red-700
+                  active:scale-90
                 "
               >
-                <X size={24} strokeWidth={3} />
+                <X
+                  size={26}
+                  strokeWidth={3}
+                />
               </button>
             </div>
 
-            <form onSubmit={handleSaveProfile} className="size={20} space-y-3">
+            {/* CONTENT */}
+            <form
+              onSubmit={handleSaveProfile}
+              className="
+                grid
+                grid-cols-1
+                gap-x-6
+                gap-y-2
+                px-5
+                py-5
+
+                sm:px-7
+
+                md:grid-cols-2
+                md:gap-x-8
+
+                lg:px-10
+                lg:py-8
+                lg:gap-x-10
+                lg:gap-y-3
+              "
+            >
+              {/* NAME */}
               <AuthInput
                 label="Name"
                 name="fullName"
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                labelClassName="text-[12px] text-white"
-                inputClassName="text-[12px] pb-1"
-                wrapperClassName="mb-3"
-                variant="boxed"
+                onChange={(e) =>
+                  setFullName(e.target.value)
+                }
+                wrapperClassName="mb-4"
+                variant="field"
               />
 
+              {/* STUDENT ID */}
               <AuthInput
                 label="Student ID"
                 name="studentId"
                 value={user?.studentId || ""}
                 disabled
-                labelClassName="text-[12px] text-white"
-                inputClassName="text-[12px] pb-1 bg-[#d8bfc2]"
-                wrapperClassName="mb-3"
-                variant="boxed"
+                wrapperClassName="mb-4"
+                variant="field"
               />
 
+              {/* EMAIL */}
               <AuthInput
                 label="E-mail address"
                 name="email"
                 value={email}
                 disabled
-                labelClassName="text-[12px] text-white"
-                inputClassName="text-[12px] pb-1 bg-[#d8bfc2]"
-                wrapperClassName="mb-3"
-                variant="boxed"
+                wrapperClassName="mb-4"
+                variant="field"
               />
 
+              {/* ROLE */}
               <AuthInput
                 label="Role"
                 name="role"
                 value={role}
                 disabled
-                labelClassName="text-[12px] text-white"
-                inputClassName="text-[12px] pb-1 bg-[#d8bfc2]"
-                wrapperClassName="mb-3"
-                variant="boxed"
+                wrapperClassName="mb-4"
+                variant="field"
               />
 
+              {/* ENGLISH LEVEL */}
               <AuthInput
                 label="English Level"
                 name="englishLevel"
                 value={englishLevel}
                 disabled
-                labelClassName="text-[12px] text-white"
-                inputClassName="text-[12px] pb-1 bg-[#d8bfc2]"
-                wrapperClassName="mb-3"
-                variant="boxed"
+                wrapperClassName="mb-4"
+                variant="field"
               />
 
+              {/* LEARNING GOAL */}
               <AuthSelect
                 label="Learning Goal"
                 name="learningGoal"
                 value={learningGoal}
-                onChange={(e) => setLearningGoal(e.target.value)}
+                onChange={(e) =>
+                  setLearningGoal(
+                    e.target.value
+                  )
+                }
                 options={LEARNING_GOALS}
-                labelClassName="text-[12px] text-white"
-                selectClassName="text-[12px] pb-1"
-                wrapperClassName="mb-3"
-                variant="boxed"
+                wrapperClassName="mb-4"
+                variant="field"
               />
 
-              <AuthInput
-                label="Password"
-                name="password"
-                type="password"
-                value="**************"
-                disabled
-                variant="boxed"
-              />
+              {/* PASSWORD SECTION */}
+              <div
+                className="
+                  mt-3
+                  rounded-lg
+                  border
+                  border-gray-300
+                  bg-gray-100
+                  px-4
+                  py-4
 
-              <p className="text-center text-[12px] text-white">
-                Do you want to change your password?
-              </p>
+                  md:col-span-2
 
-              <button
-                type="button"
-                onClick={() => {
-                  setShowEditModal(false);
-                  setShowPasswordModal(true);
-                  setMessage("");
-                }}
-                className="block mx-auto text-[12px] font-extrabold underline text-black"
+                  lg:px-6
+                  lg:py-5
+                "
               >
-                Change it here
-              </button>
+                <div
+                  className="
+                    flex
+                    flex-col
+                    items-center
+                    justify-between
+                    gap-3
 
+                    sm:flex-row
+                  "
+                >
+                  <div>
+                    <p
+                      className="
+                        font-extrabold
+                        text-black
+
+                        text-[15px]
+                        lg:text-[20px]
+                      "
+                    >
+                      Password
+                    </p>
+
+                    <p
+                      className="
+                        mt-1
+                        font-semibold
+                        text-gray-600
+
+                        text-[15px]
+                        lg:text-[19px]
+                      "
+                    >
+                      For security reasons,
+                      your password is hidden.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setShowPasswordModal(
+                        true
+                      );
+                      setMessage("");
+                    }}
+                    className="
+                      shrink-0
+                      rounded-md
+                      bg-red-600
+                      px-4
+                      py-2
+                      font-bold
+                      text-white
+                      transition
+                      hover:bg-red-700
+                      active:scale-95
+
+                      text-[15px]
+                      lg:text-[20px]
+                    "
+                  >
+                    Change Password
+                  </button>
+                </div>
+              </div>
+
+              {/* MESSAGE */}
               {message && (
-                <p className="text-center text-[12px] font-bold text-black">
+                <p
+                  className="
+                    mt-2
+                    text-center
+                    font-bold
+                    text-red-600
+
+                    text-[13px]
+                    md:col-span-2
+                    lg:text-[15px]
+                  "
+                >
                   {message}
                 </p>
               )}
 
-              <AuthButton
-                disabled={saving}
-                className="py-2 text-[20px]"
+              {/* SAVE */}
+              <div
+                className="
+                  mt-4
+                  md:col-span-2
+                "
               >
-                Save changes
-              </AuthButton>
+                <AuthButton
+                  disabled={saving}
+                  className="
+                    mx-auto
+                    block
+                    w-[85%]
+
+                    sm:w-[70%]
+                    lg:w-[60%]
+
+                    lg:text-[20px]
+                    lg:py-3.5
+
+                    lg:text-[25px]
+                  "
+                >
+                  {saving
+                    ? "Saving..."
+                    : "Save Changes"}
+                </AuthButton>
+              </div>
             </form>
           </Modal>
         )}
 
         {/* CHANGE PASSWORD MODAL */}
         {showPasswordModal && (
-          <Modal>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="rounded-md bg-[#555] px-4 py-1 text-white font-bold text-[18px]">
+          <Modal maxWidth="max-w-[880px]">
+            {/* HEADER */}
+            <div
+              className="
+                relative
+                flex
+                items-center
+                justify-center
+                bg-[#b8b8b8]
+                px-5
+                py-3
+              "
+            >
+              <h3
+                className="
+                  text-center
+                  font-extrabold
+                  text-black
+
+                  text-[20px]
+                  md:text-[23px]
+                  lg:text-[28px]
+                "
+              >
                 Change Password
               </h3>
 
               <button
+                type="button"
                 onClick={() => {
                   setShowPasswordModal(false);
                   setShowEditModal(true);
                   setMessage("");
                 }}
+                aria-label="Close change password"
                 className="
+                  absolute
+                  right-3
+                  top-1/2
+                  -translate-y-1/2
                   rounded-full
                   p-1
                   text-red-600
-                  transition duration-100
-                  active:scale-90
-                  active:translate-y-[1px]
+                  transition
+                  hover:bg-white/40
                   hover:text-red-700
+                  active:scale-90
                 "
               >
-                <X size={24} strokeWidth={3} />
+                <X
+                  size={26}
+                  strokeWidth={3}
+                />
               </button>
             </div>
 
-            <form onSubmit={handleSavePassword} className="space-y-3">
+            <div
+              className="
+                grid
+                grid-cols-1
+                gap-6
+                px-5
+                py-5
 
-              <AuthInput
-                label="Current Password"
-                type="password"
-                name="currentPassword"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                showToggle
-                variant="boxed"
-              />
+                sm:px-7
 
-              <AuthInput
-                label="New Password"
-                type="password"
-                name="newPassword"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                showToggle
-                variant="boxed"
-              />
-
-              <AuthInput
-                label="Confirm New Password"
-                type="password"
-                name="confirmPassword"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                showToggle
-                variant="boxed"
-              />
-
-              {message && (
-                <p className="text-center text-[12px] font-bold text-black">
-                  {message}
-                </p>
-              )}
-
-              <AuthButton
-                disabled={saving}
-                className="mt-2 py-2 text-[20px]"
+                lg:grid-cols-[1.05fr_0.95fr]
+                lg:gap-10
+                lg:px-10
+                lg:py-8
+              "
+            >
+              {/* LEFT - PASSWORD FORM */}
+              <form
+                onSubmit={handleSavePassword}
+                className="space-y-3"
               >
-                {saving ? "Saving..." : "Save changes"}
-              </AuthButton>
-            </form>
+                <AuthInput
+                  label="Current Password"
+                  type="password"
+                  name="currentPassword"
+                  value={currentPassword}
+                  onChange={(e) =>
+                    setCurrentPassword(e.target.value)
+                  }
+                  showToggle
+                  variant="underline"
+                  labelClassName="
+                    text-[16px]
+                    md:text-[18px]
+                    lg:text-[22px]
+                    text-red-600
+                  "
+                  inputClassName="
+                    text-[14px]
+                    md:text-[16px]
+                    lg:text-[19px]
+                  "
+                  wrapperClassName="mb-6"
+                />
 
-            <div className="mt-5 border-t-4 border-[#f3a3a3] pt-3">
-              <PasswordRequirements
-                password={newPassword}
-                isOpen={true}
-                compact={true}
+                <AuthInput
+                  label="New Password"
+                  type="password"
+                  name="newPassword"
+                  value={newPassword}
+                  onChange={(e) =>
+                    setNewPassword(e.target.value)
+                  }
+                  showToggle
+                  variant="underline"
+                  labelClassName="
+                    text-[16px]
+                    md:text-[18px]
+                    lg:text-[22px]
+                    text-red-600
+                  "
+                  inputClassName="
+                    text-[14px]
+                    md:text-[16px]
+                    lg:text-[19px]
+                  "
+                  wrapperClassName="mb-6"
+                />
+
+                <AuthInput
+                  label="Confirm New Password"
+                  type="password"
+                  name="confirmPassword"
+                  value={confirmPassword}
+                  onChange={(e) =>
+                    setConfirmPassword(e.target.value)
+                  }
+                  showToggle
+                  variant="underline"
+                  labelClassName="
+                    text-[16px]
+                    md:text-[18px]
+                    lg:text-[22px]
+                    text-red-600
+                  "
+                  inputClassName="
+                    text-[14px]
+                    md:text-[16px]
+                    lg:text-[19px]
+                  "
+                  wrapperClassName="mb-6"
               />
+
+                {message && (
+                  <p
+                    className="
+                      text-center
+                      font-bold
+                      text-red-600
+
+                      text-[13px]
+                      lg:text-[15px]
+                    "
+                  >
+                    {message}
+                  </p>
+                )}
+
+                <AuthButton
+                  disabled={saving}
+                  className="
+                    mx-auto
+                    mt-4
+                    block
+                    w-[90%]
+
+                    sm:w-[80%]
+
+                    lg:w-[85%]
+                    lg:py-3.5
+                    lg:text-[22px]
+                  "
+                >
+                  {saving
+                    ? "Saving..."
+                    : "Save Changes"}
+                </AuthButton>
+              </form>
+
+              {/* RIGHT - REQUIREMENTS */}
+              <section
+                className="
+                  rounded-lg
+                  bg-gray-100
+                  px-4
+                  py-4
+                "
+              >
+                <h4
+                  className="
+                    mb-3
+                    text-center
+                    font-extrabold
+                    text-black
+
+                    text-[16px]
+                    md:text-[18px]
+                    lg:text-[22px]
+                  "
+                >
+                  Password Requirements
+                </h4>
+
+                <p
+                  className="
+                    mb-4
+                    text-center
+                    text-gray-600
+
+                    text-[12px]
+                    md:text-[15px]
+                    lg:text-[18px]
+                  "
+                >
+                  Your new password must meet
+                  all of the following
+                  requirements.
+                </p>
+
+                <PasswordRequirements
+                  password={newPassword}
+                  isOpen={true}
+                  compact={true}
+                />
+              </section>
             </div>
           </Modal>
         )}
-      </section>
-    </main>
+    </AppShell>
   );
 }
 
-function SettingRow({ icon, label, onClick, isActive = false }) {
+
+
+function ActiveSettingPanel({
+  activeSetting,
+  onBack,
+}) {
+  const settings = {
+    voice: {
+      icon: <Volume2 size={25} />,
+      title: "Voice settings",
+      content: <VoiceSettingsPanel />,
+    },
+
+    language: {
+      icon: <Globe size={25} />,
+      title: "Language settings",
+      content:
+        <LanguageSettingsPanel />,
+    },
+
+    feedback: {
+      icon: (
+        <MessageSquareText
+          size={25}
+        />
+      ),
+      title: "Feedback settings",
+      content:
+        <FeedbackSettingsPanel />,
+    },
+
+    practiceDifficulty: {
+      icon: (
+        <SlidersHorizontal
+          size={25}
+        />
+      ),
+      title: "Practice difficulty",
+      content:
+        <PracticeDifficultySettingsPanel />,
+    },
+
+    notifications: {
+      icon: <Bell size={25} />,
+      title: "Notifications",
+      content:
+        <NotificationsSettingsPanel />,
+    },
+  };
+
+  const current =
+    settings[activeSetting];
+
+  if (!current) {
+    return null;
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={onBack}
+        className="
+          mb-3
+          flex
+          items-center
+          gap-2
+          font-bold
+          text-red-600
+          transition
+          hover:underline
+          active:scale-[0.98]
+
+          text-[15px]
+          md:text-[18px]
+          lg:text-[20px]
+        "
+      >
+        ← Back to settings
+      </button>
+
+      <section
+        className="
+          overflow-hidden
+          rounded-md
+          
+        "
+      >
+        <div
+          className="
+            flex
+            items-center
+            gap-3
+            bg-[#ff9c9c]
+            px-4
+            py-3
+          "
+        >
+          {current.icon}
+
+          <h3
+            className="
+              font-extrabold
+              text-black
+
+              text-[18px]
+              md:text-[20px]
+              lg:text-[25px]
+            "
+          >
+            {current.title}
+          </h3>
+        </div>
+
+        <div
+          className="
+            bg-[#d8d8d8]
+            px-4
+            py-4
+          "
+        >
+          {current.content}
+        </div>
+      </section>
+    </div>
+  );
+}
+function SettingRow({
+  icon,
+  label,
+  onClick,
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`
-        w-full rounded-sm border border-red-600
-        bg-[#ffb3b3]
-        px-3 py-1
-        flex items-center justify-between
-        shadow
-        transition duration-100
-        active:scale-95
-        active:translate-y-[1px]
-        hover:bg-red-200
-      `}
+      className="
+        flex
+        w-full
+        items-center
+        justify-between
+        rounded-md
+        bg-[#ff9c9c]
+        px-4
+        py-3
+        text-left
+        transition
+        duration-100
+        hover:bg-[#ff8c8c]
+        active:scale-[0.99]
+      "
     >
-      <span className="flex items-center gap-3 text-[14px] font-bold text-black">
+      <span
+        className="
+          flex
+          items-center
+          gap-3
+          font-extrabold
+          text-black
+
+          text-[14px]
+          md:text-[15px]
+          lg:text-[18px]
+        "
+      >
         {icon}
         {label}
       </span>
 
-      <span className="text-black font-extrabold">
-        {isActive ? "▼" : "▶"}
+      <span className="text-[18px] font-extrabold text-black">
+        ▶
       </span>
     </button>
   );
 }
-
-function Modal({ children }) {
+function Modal({
+  children,
+  maxWidth = "max-w-[760px]",
+}) {
   return (
-    <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center px-5 z-20">
-      <div className="w-full max-w-[340px] rounded-[8px] bg-[#9d9d9d] border border-gray-500 shadow-lg px-4 py-4">
+    <div
+      className="
+        fixed
+        inset-0
+        z-50
+        flex
+        items-center
+        justify-center
+        bg-black/40
+        px-3
+        py-4
+        backdrop-blur-[2px]
+
+        sm:px-5
+      "
+    >
+      <div
+        className={`
+          max-h-[92vh]
+          w-full
+          overflow-y-auto
+          rounded-[10px]
+          border
+          border-gray-300
+          bg-white
+          shadow-xl
+
+          ${maxWidth}
+        `}
+      >
         {children}
       </div>
     </div>

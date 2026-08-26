@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BarChart3, User, Bot } from "lucide-react";
-import { useState, useEffect } from "react";
+import { BarChart3, User, Bot, ChevronDown } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 
 import { useAuth } from "../../context/AuthContext";
 
@@ -12,34 +11,35 @@ import { learningUnits } from "../../data/learningContent";
 import TopicModal from "../../components/home/TopicModal";
 import ActivityModal from "../../components/home/ActivityModal";
 import UnitList from "../../components/home/UnitList";
-import AuthInput from "../../components/auth/AuthInput.jsx";
-import AuthSelect from "../../components/auth/AuthSelect.jsx";
-import PasswordRequirements from "../../components/auth/PasswordRequirements.jsx";
-import AuthButton from "../../components/auth/AuthButton.jsx";
+import { englishTips } from "../../data/englishTips";
+import AppShell from "../../components/layout/AppShell";
+import BottomNavigation from "../../components/layout/BottomNavigation";
+
+import {
+  CircleUserRound,
+  ChartNoAxesCombined,
+} from "lucide-react";
 
 import {
   getActivePractice,
+  getUserPracticeHistory,
   abandonPracticeHistory,
 } from "../../services/practiceHistoryService";
-
-import {
-  createNewConversation,
-  saveConversation,
-} from "../../utils/chatModel";
 
 import ActivePracticeModal
   from "../../components/practice/ActivePracticeModal.js";
 
+import {
+  calculateProgressStats,
+  calculateOverallProgress,
+} from "../../utils/progressCalculations";
+
 export default function HomePage() {
-  /* =========================================================
-     AUTH Y NAVEGACIÓN
-  ========================================================= */
+  /*AUTH Y NAVEGACIÓN*/
   const { user, logout } = useAuth();
   const router = useRouter();
 
-  /* =========================================================
-     ESTADOS DE MODALES Y SELECCIÓN
-  ========================================================= */
+  /*ESTADOS DE MODALES Y SELECCIÓN*/
   const [selectedUnit, setSelectedUnit] = useState(null);
   const [selectedTopic, setSelectedTopic] = useState(null);
 
@@ -54,6 +54,16 @@ export default function HomePage() {
   const [
     loadingActivePractice,
     setLoadingActivePractice,
+  ] = useState(true);
+
+  const [
+    practiceHistory,
+    setPracticeHistory,
+  ] = useState([]);
+
+  const [
+    loadingLearningData,
+    setLoadingLearningData,
   ] = useState(true);
 
   const [
@@ -75,6 +85,16 @@ export default function HomePage() {
     isAbandoning,
     setIsAbandoning,
   ] = useState(false);
+
+  const [
+    showMobileUnits,
+    setShowMobileUnits,
+  ] = useState(false);
+
+  const [
+    homeEnglishTip,
+    setHomeEnglishTip,
+  ] = useState(null);
 
   const buildChatUrl = (
     activityContext
@@ -222,6 +242,83 @@ export default function HomePage() {
       cancelled = true;
     };
   }, [user?.uid]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadLearningData =
+      async () => {
+        if (!user?.uid) {
+          if (!cancelled) {
+            setPracticeHistory([]);
+            setLoadingLearningData(
+              false
+            );
+          }
+
+          return;
+        }
+
+        try {
+          setLoadingLearningData(
+            true
+          );
+
+          const history =
+            await getUserPracticeHistory(
+              user.uid
+            );
+
+          if (cancelled) {
+            return;
+          }
+
+          setPracticeHistory(
+            Array.isArray(history)
+              ? history
+              : []
+          );
+        } catch (error) {
+          console.error(
+            "Error loading learning data:",
+            error
+          );
+
+          if (!cancelled) {
+            setPracticeHistory([]);
+          }
+        } finally {
+          if (!cancelled) {
+            setLoadingLearningData(
+              false
+            );
+          }
+        }
+      };
+
+    loadLearningData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.uid]);
+
+
+  useEffect(() => {
+    if (!englishTips.length) {
+      return;
+    }
+
+    const randomIndex =
+      Math.floor(
+        Math.random() *
+          englishTips.length
+      );
+
+    setHomeEnglishTip(
+      englishTips[randomIndex]
+    );
+  }, []);
 
   const handleContinuePractice =
     () => {
@@ -531,357 +628,1062 @@ export default function HomePage() {
       hasActivePractice,
     });
 
+  const homeProgressStats =
+    useMemo(() => {
+      return calculateProgressStats(
+        practiceHistory
+      );
+    }, [practiceHistory]);
+
+  const homeOverallProgress =
+    useMemo(() => {
+      return calculateOverallProgress(
+        practiceHistory,
+        learningUnits
+      );
+    }, [practiceHistory]);
+
   return (
     <>
-      {/* =========================================================
-         CONTENEDOR GENERAL DE LA PÁGINA
-      ========================================================= */}
-      <main className="min-h-screen bg-[#e6e6e6] flex justify-center px-4 py-6 overflow-hidden">
-        
-        {/* =========================================================
-           CONTENEDOR PRINCIPAL DEL HOME
-        ========================================================= */}
-        <section className="w-full max-w-[390px] h-full bg-white border-2 border-[#f3a3a3] rounded-[10px] shadow-md overflow-hidden flex flex-col justify-evenly">
-          
-          {/* =========================================================
-             HEADER PRINCIPAL
-             Branding LINGUAI UV
-          ========================================================= */}
-          <header className="shrink-0 bg-[#b8b8b8] border-b-4 border-white">
-            <div className="grid grid-cols-[1fr_1px_1fr] items-center px-4 py-3">
-              
-              {/* Logo */}
-              <div className="text-center">
-                <h1 className="text-[30px] font-extrabold leading-none text-black">
-                  LINGUAI
-                </h1>
+      <AppShell
+        footer={
+          <BottomNavigation/>
+        }
+      >
+        {/*BIENVENIDA*/}
+        <section
+          className="
+            shrink-0
+            bg-[#b8b8b8]
+            px-4 py-3
 
-                <p className="text-[20px] font-extrabold leading-none text-red-600">
-                  UV
-                </p>
-              </div>
-
-              {/* Separador */}
-              <div className="h-10 bg-white" />
-
-              {/* Subtítulo */}
-              <p className="text-center text-[16px] font-bold leading-tight text-white">
-                Univalle&apos;s AI tutor for learning English
-              </p>
-            </div>
-          </header>
-
-          {/* =========================================================
-             SECCIÓN DE BIENVENIDA
-          ========================================================= */}
-          <section className="shrink-0 bg-[#b8b8b8] px-4 py-3">
-            {/* FILA SUPERIOR */}
-            <div className="flex justify-between items-start">
-
-              {/* IZQUIERDA */}
-              <div className="flex gap-3 items-center">
-                
-                {/* Avatar tutor */}
-                <div className="bg-white rounded-full p-2">
-                  <Bot size={24} className="text-black" />
-                </div>
-
-                {/* Texto bienvenida */}
-                <div>
-                  <h2 className=" mt-5 text-[25px] font-bold text-white leading-tight">
-                    Hello {firstName} 👋
-                  </h2>
-
-                  <p className="text-[18px] font-semibold text-white leading-tight">
-                    Ready to practice English?
-                  </p>
-                </div>
-              </div>
-
-              {/* BOTÓN LOGOUT */}
-              <button
-                onClick={handleLogout}
+            sm:px-6
+          "
+        >
+          <div
+            className="
+              flex
+              items-center
+              justify-between
+              gap-4
+            "
+          >
+            {/* USUARIO */}
+            <div
+              className="
+                flex
+                min-w-0
+                items-center
+                gap-3
+              "
+            >
+              <div
                 className="
-                  rounded-[5px]
-                  bg-red-600
-                  px-2
-                  py-2
-                  text-[15px]
-                  -mt-1
-                  font-bold
-                  text-white
-                  shadow
-                  hover:bg-red-700
-                  transition
-                  duration-100
-                  active:scale-95
-                  active:translate-y-[1px]
+                  flex
+                  h-10
+                  w-10
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-full
+                  bg-white
                 "
               >
-                Log out
-              </button>
+                <Bot
+                  size={28}
+                  className="text-black"
+                />
+              </div>
 
-            </div>
-          </section>
+              <div className="min-w-0">
+                <h2
+                  className="
+                    truncate
+                    font-extrabold
+                    leading-tight
+                    text-red-600
 
-          {/* =========================================================
-            PRÁCTICA ACTIVA O INVITACIÓN A COMENZAR
-          ========================================================= */}
-          {loadingActivePractice ? (
-            <section className="px-4 py-3">
-              <div className="min-h-[92px] flex items-center justify-center rounded-[6px] bg-[#f5f5f5]">
-                <p className="text-[13px] font-semibold text-gray-600">
-                  Loading your practice...
+                    text-[15px]
+                    md:text-[20px]
+                    lg:text-[20px]
+                    xl:text-[25px]
+                  "
+                >
+                  Hello {firstName} 👋
+                </h2>
+
+                <p
+                  className="
+                    font-semibold
+                    leading-tight
+                    text-black
+
+                    text-[14px]
+                    md:text-[10px]
+                    lg:text-[20px]
+                    xl:text-[20px]
+                  "
+                >
+                  Ready to practice English?
                 </p>
               </div>
-            </section>
-          ) : hasActivePractice ? (
-            <section className="px-4 py-3">
-              {/* Título */}
-              <h3 className="text-[18px] font-extrabold text-black">
-                Continue where you left off?
-              </h3>
+            </div>
 
-              {/* Información de la práctica */}
-              <div className="mt-2 grid grid-cols-[1fr_auto] items-center gap-3">
-                <div className="min-w-0">
-                  {/* Unidad */}
-                  <p className="truncate text-[14px] font-semibold text-black">
+            {/* LOGOUT */}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="
+                shrink-0
+                rounded-md
+                bg-red-600
+                px-3
+                py-2
+                font-bold
+                text-white
+                shadow
+                transition-all
+                duration-100
+                hover:bg-red-700
+                active:translate-y-[1px]
+                active:scale-95
+
+                text-[12px]
+                md:text-[15px]
+                lg:text-[20px]
+              "
+            >
+              Log out
+            </button>
+          </div>
+        </section>
+
+        {/*CONTENIDO CENTRAL*/}
+        <div
+          className="
+            min-h-0
+            flex-1
+            overflow-y-auto
+            px-3
+            py-3
+
+            sm:px-4
+            sm:py-4
+
+            lg:overflow-hidden
+          "
+        >
+          <div
+            className="
+              grid
+              grid-cols-1
+              gap-4
+
+              lg:h-full
+              lg:min-h-0
+              lg:grid-cols-[1.15fr_0.85fr]
+            "
+          >
+            {/*COLUMNA IZQUIERDA
+                Course Units + Your Learning*/}
+            <div
+              className="
+                flex
+                flex-col
+                gap-4
+
+                lg:min-h-0
+              "
+            >
+              {/*COURSE UNITS*/}
+              <section
+                className="
+                  flex
+                  flex-col
+                  overflow-hidden
+                  rounded-lg
+                  border
+                  border-gray-300
+                  bg-white
+                  shadow-sm
+
+                  lg:min-h-0
+                  lg:flex-1
+                "
+              >
+                {/*HEADER MÓVIL / TABLET*/}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowMobileUnits(
+                      (previous) => !previous
+                    )
+                  }
+                  className="
+                    flex
+                    w-full
+                    items-center
+                    justify-between
+                    gap-3
+                    bg-[#b8b8b8]
+                    px-3
+                    py-2
+                    text-left
+
+                    lg:hidden
+                  "
+                >
+                  <h3
+                    className="
+                      
+                      font-extrabold
+                      text-black
+
+                      text-[17px]
+                      md:text-[18px]
+                      lg:text-[20px]
+                      xl:text-[21px]
+                    "
+                  >
+                    Course Units
+                  </h3>
+
+                  <ChevronDown
+                    size={24}
+                    strokeWidth={3}
+                    className={`
+                      shrink-0
+                      text-black
+                      transition-transform
+                      duration-200
+
+                      ${
+                        showMobileUnits
+                          ? "rotate-180"
+                          : ""
+                      }
+                    `}
+                  />
+                </button>
+
+                {/*HEADER DESKTOP*/}
+                <div
+                  className="
+                    hidden
+                    shrink-0
+                    items-center
+                    justify-between
+                    gap-3
+                    bg-[#b8b8b8]
+                    px-3
+                    py-1.5
+
+                    lg:flex
+                  "
+                >
+                  <h3
+                    className="
+                      font-extrabold
+                      text-black
+
+                      lg:text-[20px]
+                      xl:text-[21px]
+                    "
+                  >
+                    Course Units
+                  </h3>
+
+                  <span
+                    className="
+                      font-semibold
+                      text-black
+
+                      lg:text-[18px]
+                      xl:text-[20px]
+                    "
+                  >
+                    Tap to select one
+                  </span>
+                </div>
+
+                {/*LISTA MÓVIL
+                    Sin scroll interno*/}
+                {showMobileUnits && (
+                  <div
+                    className="
+                      p-2
+                      lg:hidden
+                    "
+                  >
+                    <UnitList
+                      units={learningUnits}
+                      onSelectUnit={(unit) => {
+                        handleSelectUnit(unit);
+
+                        setShowMobileUnits(false);
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/*LISTA DESKTOP
+                    Con scroll propio*/}
+                <div
+                  className="
+                    hidden
+                    min-h-0
+                    flex-1
+                    overflow-y-auto
+                    overscroll-contain
+                    p-2
+
+                    lg:block
+                  "
+                >
+                  <UnitList
+                    units={learningUnits}
+                    onSelectUnit={
+                      handleSelectUnit
+                    }
+                  />
+                </div>
+              </section>
+
+              {/*YOUR LEARNING */}
+              <section
+                className="
+                  shrink-0
+                  overflow-hidden
+                  rounded-lg
+                  border
+                  border-gray-300
+                  bg-white
+                  shadow-sm
+                "
+              >
+                {/* HEADER */}
+                <div
+                  className="
+                    bg-[#b8b8b8]
+                    px-3
+                    py-1.5
+                  "
+                >
+                  <h3
+                    className="
+                      font-extrabold
+                      text-black
+
+                      text-[17px]
+                      md:text-[18px]
+                      lg:text-[20px]
+                      xl:text-[21px]
+                    "
+                  >
+                    Your Learning
+                  </h3>
+                </div>
+
+                {loadingLearningData ? (
+                  <p
+                    className="
+                      px-3
+                      py-3
+                      text-center
+                      font-semibold
+                      text-gray-600
+
+                      text-[13px]
+                      md:text-[14px]
+                      lg:text-[17px]
+                    "
+                  >
+                    Loading your progress...
+                  </p>
+                ) : (
+                  <div
+                    className="
+                      grid
+                      grid-cols-3
+                      gap-2
+                      p-2
+                    "
+                  >
+                    {/* OVERALL PROGRESS */}
+                    <article
+                      className="
+                        rounded-md
+                        border
+                        border-gray-300
+                        bg-[#fafafa]
+                        px-2
+                        py-2
+                        text-center
+                      "
+                    >
+                      <p
+                        className="
+                          
+                          font-extrabold
+                          uppercase
+                          tracking-wide
+                          text-gray-500
+
+                          text-[13px]
+                          md:text-[14px]
+                          lg:text-[17px]
+                        "
+                      >
+                        Overall Progress
+                      </p>
+
+                      <p
+                        className="
+                          mt-0.5
+                          
+                          font-extrabold
+                          text-red-600
+
+                          text-[13px]
+                          md:text-[14px]
+                          lg:text-[17px]
+                        "
+                      >
+                        {homeOverallProgress}%
+                      </p>
+
+                      <div
+                        className="
+                          mx-auto
+                          mt-1
+                          h-1.5
+                          max-w-[90px]
+                          overflow-hidden
+                          rounded-full
+                          bg-gray-300
+                        "
+                      >
+                        <div
+                          className="
+                            h-full
+                            rounded-full
+                            bg-red-600
+                          "
+                          style={{
+                            width: `${homeOverallProgress}%`,
+                          }}
+                        />
+                      </div>
+                    </article>
+
+                    {/* AVERAGE SCORE */}
+                    <article
+                      className="
+                        rounded-md
+                        border
+                        border-gray-300
+                        bg-[#fafafa]
+                        px-2
+                        py-2
+                        text-center
+                      "
+                    >
+                      <p
+                        className="
+                          font-extrabold
+                          uppercase
+                          tracking-wide
+                          text-gray-500
+
+                          text-[13px]
+                          md:text-[14px]
+                          lg:text-[17px]
+                        "
+                      >
+                        Average Score
+                      </p>
+
+                      <p
+                        className="
+                          mt-0.5
+                          font-extrabold
+                          text-red-600
+
+                          text-[13px]
+                          md:text-[14px]
+                          lg:text-[17px]                        
+                          "
+                      >
+                        {homeProgressStats
+                          .averageScore !== null
+                          ? `${homeProgressStats.averageScore}%`
+                          : "N/A"}
+                      </p>
+                    </article>
+
+                    {/* LEARNING STREAK */}
+                    <article
+                      className="
+                        rounded-md
+                        border
+                        border-gray-300
+                        bg-[#fafafa]
+                        px-2
+                        py-2
+                        text-center
+                      "
+                    >
+                      <p
+                        className="
+                          font-extrabold
+                          uppercase
+                          tracking-wide
+                          text-gray-500
+
+                          text-[13px]
+                          md:text-[14px]
+                          lg:text-[17px]
+                        "
+                      >
+                        Learning Streak
+                      </p>
+
+                      <p className="
+                        mt-1 
+                        font-extrabold 
+                        text-black 
+
+                        text-[13px]
+                        md:text-[14px]
+                        lg:text-[17px]
+                      ">
+                        🔥 {homeProgressStats.learningStreak} {homeProgressStats.learningStreak === 1
+                          ? "day"
+                          : "days"}
+                      </p>
+
+                    </article>
+                  </div>
+                )}
+              </section>
+            </div>
+
+            {/*COLUMNA DERECHA
+                Continue Practice + Free Practice*/}
+            <div
+              className="
+                flex
+                flex-col
+                gap-4
+
+                lg:min-h-0
+              "
+            >
+              {/*PRÁCTICA ACTIVA*/}
+              {loadingActivePractice ? (
+                <section
+                  className="
+                    flex
+                    min-h-[120px]
+                    items-center
+                    justify-center
+                    rounded-lg
+                    border
+                    border-gray-300
+                    bg-[#fafafa]
+                    p-4
+                    shadow-sm
+                  "
+                >
+                  <p
+                    className="
+                      text-center
+                      font-semibold
+                      text-gray-600
+
+                      text-[13px]
+                      md:text-[14px]
+                      lg:text-[17px]
+                    "
+                  >
+                    Loading your practice...
+                  </p>
+                </section>
+              ) : hasActivePractice ? (
+                <section
+                  className="
+                    rounded-lg
+                    border
+                    border-gray-300
+                    bg-[#fafafa]
+                    p-4
+                    shadow-sm
+                  "
+                >
+                  <h3
+                    className="
+                      font-extrabold
+                      text-red-600
+                      text-center
+
+                      text-[17px]
+                      md:text-[18px]
+                      lg:text-[20px]
+                      xl:text-[21px]
+                    "
+                  >
+                    Continue your practice
+                  </h3>
+
+                  {/* UNIDAD */}
+                  <p
+                    className="
+                      mt-2
+                      
+                      font-extrabold
+                      leading-snug
+                      text-black
+
+                      text-[13px]
+                      md:text-[14px]
+                      lg:text-[17px]
+                    "
+                  >
                     {activePractice.unitTitle ||
                       "Current unit"}
                   </p>
 
-                  {/* Porcentaje */}
-                  <p className="text-[13px] text-black">
-                    {activePracticeProgress}%
-                    {" "}completed
-                  </p>
+                  {/* INFORMACIÓN COMPACTA */}
+                  <div
+                    className="
+                      mt-2
+                      space-y-1
+                      
+                      leading-snug
 
-                  {/* Barra de progreso */}
-                  <div className="mt-1 h-3 w-full overflow-hidden rounded-full bg-gray-200">
-                    <div
-                      className="h-full rounded-full bg-red-600 transition-[width] duration-300"
-                      style={{
-                        width: `${activePracticeProgress}%`,
-                      }}
-                    />
+                      text-[12px]
+                      md:text-[13px]
+                      lg:text-[16px]
+                    "
+                  >
+                    <p>
+                      <span className="font-extrabold text-black">
+                        Topic:
+                      </span>{" "}
+                      <span className="font-bold text-red-600">
+                        {activePractice.topicTitle ||
+                          "Current topic"}
+                      </span>
+                    </p>
+
+                    <p>
+                      <span className="font-extrabold text-black">
+                        Activity:
+                      </span>{" "}
+                      <span className="font-semibold text-gray-700">
+                        {activePractice.activityName ||
+                          activePractice.activityType ||
+                          "English practice"}
+                      </span>
+                    </p>
+
+                    <p>
+                      <span className="font-extrabold text-black">
+                        Meaningful interactions:
+                      </span>{" "}
+                      <span className="font-semibold text-gray-700">
+                        {Number(
+                          activePractice
+                            .meaningfulInteractionsCount ??
+                            0
+                        )}
+                      </span>
+                    </p>
                   </div>
 
-                  {/* Tema y actividad */}
-                  <p className="mt-1 truncate text-[12px] font-bold text-red-600">
-                    {activePractice.topicTitle ||
-                      activePractice.activityName ||
-                      "English practice"}
-                  </p>
+                  {/* PROGRESO */}
+                  <div className="mt-3">
+                    <div
+                      className="
+                        flex
+                        items-center
+                        justify-between
+                        gap-3
+                      "
+                    >
+                      <span
+                        className="
+                          
+                          font-semibold
+                          text-gray-600
 
-                  {activePractice.topicTitle &&
-                    activePractice.activityName && (
-                      <p className="truncate text-[11px] font-semibold text-gray-600">
-                        {activePractice.activityName}
-                      </p>
-                    )}
-                </div>
+                          text-[12px]
+                          md:text-[13px]
+                          lg:text-[16px]
+                        "
+                      >
+                        Practice progress
+                      </span>
 
-                {/* Botón para retomar */}
-                <button
-                  type="button"
-                  onClick={
-                    handleContinuePractice
-                  }
-                  aria-label="Continue active practice"
+                      <span
+                        className="
+                          
+                          font-extrabold
+                          text-red-600
+
+                          text-[12px]
+                          md:text-[13px]
+                          lg:text-[16px]
+                        "
+                      >
+                        {activePracticeProgress}%
+                      </span>
+                    </div>
+
+                    <div
+                      className="
+                        mt-1
+                        h-2.5
+                        overflow-hidden
+                        rounded-full
+                        bg-gray-300
+                      "
+                    >
+                      <div
+                        className="
+                          h-full
+                          rounded-full
+                          bg-red-600
+                          transition-[width]
+                          duration-300
+                        "
+                        style={{
+                          width: `${activePracticeProgress}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* RESUME */}
+                  <button
+                    type="button"
+                    onClick={
+                      handleContinuePractice
+                    }
+                    className="
+                      mt-3
+                      w-full
+                      rounded-md
+                      bg-red-600
+                      px-4
+                      py-2.5
+                      font-extrabold
+                      text-white
+                      shadow
+                      transition-all
+                      hover:bg-red-700
+                      active:scale-[0.98]
+
+                      text-[18px]
+                      md:text-[20px]
+                      lg:text-[24px]
+                    "
+                  >
+                    Resume Practice
+                  </button>
+                </section>
+              ) : (
+                /* =============================================
+                    SIN PRÁCTICA ACTIVA
+                ============================================== */
+                <section
                   className="
-                    whitespace-nowrap
-                    rounded-[5px]
-                    bg-red-600
-                    px-4
-                    py-2
-                    text-[13px]
-                    font-bold
-                    text-white
-                    shadow-md
-                    transition-all
-                    duration-150
-                    hover:bg-red-700
-                    hover:shadow-lg
-                    active:scale-95
-                    disabled:cursor-not-allowed
-                    disabled:opacity-50
+                    rounded-lg
+                    border
+                    border-gray-300
+                    bg-[#fafafa]
+                    p-4
+                    shadow-sm
                   "
                 >
-                  Continue Here
-                </button>
-              </div>
-            </section>
-          ) : (
-            <section className="px-4 py-3">
-              <div className="rounded-[7px] border border-gray-300 bg-[#f7f7f7] px-3 py-3">
-                <h3 className="text-[17px] font-extrabold text-black">
-                  Ready for a new practice?
+                  <h3
+                    className="
+                      font-extrabold
+                      text-red-600
+                      text-center
+
+                      text-[17px]
+                      md:text-[18px]
+                      lg:text-[21px]
+                      xl:text-[25px]
+                    "
+                  >
+                    Ready for a new practice?
+                  </h3>
+
+                  <p
+                    className="
+                      mt-2
+                      font-semibold
+                      leading-relaxed
+                      text-gray-700
+                      text-center
+
+                      text-[13px]
+                      md:text-[14px]
+                      lg:text-[17px]
+                    "
+                  >
+                    Choose a unit, topic and
+                    activity to start practicing
+                    English with LINGUAI.
+                  </p>
+                </section>
+              )}
+
+              {/* ===============================================
+                  FREE PRACTICE
+              ================================================ */}
+              <section
+                className="
+                  flex
+                  flex-col
+                  rounded-lg
+                  border
+                  border-gray-300
+                  bg-white
+                  p-4
+                  shadow-sm
+
+                  lg:flex-1
+                "
+              >
+                <h3
+                  className="
+                    font-extrabold
+                    text-red-600
+                    text-center
+
+                    text-[17px]
+                    md:text-[18px]
+                    lg:text-[21px]
+                    xl:text-[25px]
+                  "
+                >
+                  Free Practice
                 </h3>
 
-                <p className="mt-1 text-[13px] font-semibold leading-snug text-gray-700">
-                  Choose a unit, topic and
-                  activity below to start
-                  learning.
+                <p
+                  className="
+                    mt-2
+                    mb-3
+                    font-semibold
+                    leading-relaxed
+                    text-gray-600
+                    text-center
+
+                    text-[13px]
+                    md:text-[14px]
+                    lg:text-[17px]
+                  "
+                >
+                  Practice freely with LINGUAI
+                  using your recent learning
+                  context.
                 </p>
-              </div>
-            </section>
-          )}
 
-          {/* =========================================================
-             LISTA DE UNIDADES DEL CURSO
-          ========================================================= */}
-          <section className="px-4 pb-3">
-            
-            {/* Header de sección */}
-            <div className="flex items-center justify-between border-y border-black py-1">
-              <h3 className="text-[17px] font-extrabold text-black">
-                Course Units
-              </h3>
+                <button
+                  type="button"
+                  className="
+                    mt-4
+                    w-full
+                    rounded-md
+                    bg-red-600
+                    px-4
+                    py-2.5
+                    font-extrabold
+                    text-white
+                    shadow
+                    transition-all
+                    hover:bg-red-700
+                    active:scale-[0.98]
 
-              <span className="text-[15px] text-black">
-                Tap to select one
-              </span>
-            </div>
+                    lg:mt-auto
 
-            {/* Lista de unidades */}
-            <UnitList
-              units={learningUnits}
-              onSelectUnit={handleSelectUnit}
-            />
-          </section>
-
-          {/* =========================================================
-             FREE PRACTICE
-          ========================================================= */}
-          <section className="px-4 py-3 grid grid-cols-[1fr_1fr] gap-3 items-center">
-            
-            {/* Botón Free Practice */}
-            <AuthButton
-              className="py-1 text-[20px]"
-            >
-              Free Practice
-            </AuthButton>
-
-            {/* Texto contextual */}
-            <p className="text-center text-[15px] font-semibold text-black leading-tight">
-              [Context-aware]
-              <br />
-              Last unit + Last topic
-            </p>
-          </section>
-
-          {/* =========================================================
-             FOOTER / NAVEGACIÓN INFERIOR
-          ========================================================= */}
-          <nav className="border-t border-black bg-[#b8b8b8] px-2 sm:px-4 py-2 shrink-0">
-            <div className="grid grid-cols-[1fr_2px_1fr] items-center text-center">
-
-              {/* Perfil */}
-              <Link
-                href="/profile"
-                className="
-                  flex flex-col items-center gap-1 text-black
-                  hover:scale-[1.1]
-                  active:scale-95
-                  active:translate-y-[2px]
-                  rounded-md
-                  py-1
+                    text-[18px]
+                    md:text-[20px]
+                    lg:text-[24px]
                   "
-              >
-                <User size={40} className="sm:w-9 sm:h-9 fill-black" />
+                >
+                  Start Free Practice
+                </button>
+              </section>
 
-                <span className="text-[15px] font-bold">
-                  My Profile
-                </span>
-              </Link>
-
-              <div className="h-full bg-white" />
-
-              {/* Progreso */}
-              <Link
-                href="/progress"
-                className="
-                  flex flex-col items-center gap-1 text-black
-                  hover:scale-[1.1]
-                  active:scale-95
-                  active:translate-y-[2px]
-                  rounded-md
-                  py-1
+              {homeEnglishTip && (
+                <section
+                  className="
+                    rounded-lg
+                    border
+                    border-gray-300
+                    bg-white
+                    px-4
+                    py-1
+                    shadow-sm
                   "
-              >
-                <BarChart3 size={40} className="sm:w-9 sm:h-9" />
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-[20px]">
+                      💡
+                    </span>
 
-                <span className="text-[15px] font-bold">
-                  My Progress
-                </span>
-              </Link>
+                    <h3
+                      className="
+                        font-extrabold
+                        text-red-600
 
+                        text-[17px]
+                        lg:text-[20px]
+                      "
+                    >
+                      {homeEnglishTip.title}
+                    </h3>
+                  </div>
+
+                  <p
+                    className="
+                      mt-2
+                      font-semibold
+                      leading-relaxed
+                      text-gray-700
+
+                      text-[14px]
+                      lg:text-[18px]
+                    "
+                  >
+                    {homeEnglishTip.text}
+                  </p>
+
+                  <p
+                    className="
+                      mt-2
+                      text-[12px]
+                      font-semibold
+
+                      text-gray-500
+                      lg:text-[16px]
+                    "
+                  >
+                    <span className="font-extrabold text-black">
+                      Example:
+                    </span>{" "}
+                    <span className="italic">
+                      {homeEnglishTip.example}
+                    </span>
+                  </p>
+                </section>
+              )}
             </div>
-          </nav>
-        </section>
-      </main>
+          </div>
+        </div>
+      </AppShell>
 
-      {/* =========================================================
-         MODAL DE TEMAS
-      ========================================================= */}
-      {showTopicModal && selectedUnit && (
+    {/* =========================================================
+        MODAL DE TEMAS
+    ========================================================= */}
+    {showTopicModal &&
+      selectedUnit && (
         <TopicModal
-          unit={selectedUnit}
-          onClose={() => setShowTopicModal(false)}
-          onSelectTopic={handleSelectTopic}
-        />
-      )}
-
-      {/* =========================================================
-         MODAL DE ACTIVIDADES
-      ========================================================= */}
-      {showActivityModal && selectedUnit && selectedTopic && (
-        <ActivityModal
-          unit={selectedUnit}
-          topic={selectedTopic}
-          onClose={() => setShowActivityModal(false)}
-          onBack={() => {
-            setShowActivityModal(false);
-            setShowTopicModal(true);
-          }}
-          onSelectActivity={handleSelectActivity}
-        />
-      )}
-
-      {/* =========================================================
-        MODAL DE PRÁCTICA ACTIVA
-      ========================================================= */}
-      <ActivePracticeModal
-        isOpen={
-          showActivePracticeModal
-        }
-        activePractice={
-          activePractice
-        }
-        isProcessing={
-          isChangingPractice
-        }
-        onContinue={
-          handleContinueCurrentPractice
-        }
-        onAbandon={
-          handleAbandonAndChange
-        }
-        onClose={() => {
-          if (isChangingPractice) {
-            return;
+          unit={
+            selectedUnit
           }
+          onClose={() =>
+            setShowTopicModal(
+              false
+            )
+          }
+          onSelectTopic={
+            handleSelectTopic
+          }
+        />
+      )}
 
-          setShowActivePracticeModal(
-            false
-          );
+    {/* =========================================================
+        MODAL DE ACTIVIDADES
+    ========================================================= */}
+    {showActivityModal &&
+      selectedUnit &&
+      selectedTopic && (
+        <ActivityModal
+          unit={
+            selectedUnit
+          }
+          topic={
+            selectedTopic
+          }
+          onClose={() =>
+            setShowActivityModal(
+              false
+            )
+          }
+          onBack={() => {
+            setShowActivityModal(
+              false
+            );
 
-          setSelectedNewActivity(
-            null
-          );
-        }}
-      />
-    </>
-  );
+            setShowTopicModal(
+              true
+            );
+          }}
+          onSelectActivity={
+            handleSelectActivity
+          }
+        />
+      )}
+
+    {/* =========================================================
+        MODAL DE PRÁCTICA ACTIVA
+
+        Conserva aquí tu implementación actual.
+    ========================================================= */}
+    <ActivePracticeModal
+      isOpen={
+        showActivePracticeModal
+      }
+
+      activePractice={
+        activePractice
+      }
+
+      isProcessing={
+        isAbandoning ||
+        isChangingPractice
+      }
+
+      onContinue={
+        handleContinueCurrentPractice
+      }
+
+      onAbandon={
+        handleAbandonAndChange
+      }
+
+      onClose={() => {
+        if (
+          isAbandoning ||
+          isChangingPractice
+        ) {
+          return;
+        }
+
+        setShowActivePracticeModal(
+          false
+        );
+
+        setSelectedNewActivity(
+          null
+        );
+      }}
+    />
+  </>
+);
 }

@@ -8,7 +8,14 @@ export default function NotificationsSettingsPanel() {
   const [dailyGoalAlerts, setDailyGoalAlerts] = useState(true);
 
   return (
-    <div className="bg-[#9d9d9d] px-4 py-4 shadow-md border border-gray-500 min-h-[170px] flex flex-col justify-evenly">
+    <div className="
+      bg-[#e5e5e5]
+      px-4 py-4 
+      shadow-md 
+      min-h-[170px] 
+      flex flex-col 
+      justify-evenly
+    ">
       <SettingSwitch
         label="Practice reminders"
         value={practiceReminders}

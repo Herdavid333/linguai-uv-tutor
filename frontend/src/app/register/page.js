@@ -126,134 +126,459 @@ export default function RegisterPage() {
   };
 
   return (
-    <>
-      <main className="min-h-screen bg-[#e6e6e6] flex items-center justify-center px-4 py-4">
-        <AuthCard showArrow={true} width="1200px">
-          <div className="text-center mb-5 -mt-2">
-            <h2 className="text-[50px] font-bold text-black leading-none">
-              Sign Up
-            </h2>
-            <p className="text-[25px] text-black font-semibold mt-3 leading-4">
-              Create an account to get started !
-            </p>
-          </div>
+    <main
+      className="
+        min-h-screen
+        items-center
+        justify-center
+        bg-[#e6e6e6]
+        px-4
+        py-4
 
-          <form onSubmit={handleSubmit} className="w-full">
-            <p className="mb-10 text-center text-[20px] font-bold text-red-600">
-              All fields below are required
-            </p>
+        sm:px-4
 
-            <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.4fr_1fr]">
-            <div>
-              <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-2">
-                <AuthInput
-                  label="Full name"
-                  name="fullName"
-                  value={form.fullName}
-                  onChange={handleChange}
-                />
+        lg:px-4
+        lg:py-4
+      "
+    >
+      <section
+        className="
+          mx-auto
+          flex
+          min-h-[calc(100vh-40px)]
+          w-full
+          max-w-[1400px]
+          flex-col
+          overflow-hidden
+          rounded-[12px]
+          bg-white
+          shadow-md
 
-                <AuthInput
-                  label="Student ID"
-                  name="studentId"
-                  value={form.studentId}
-                  onChange={handleChange}
-                />
+          sm:max-w-[600px]
+          md:max-w-[850px]
+          lg:max-w-[1180px]
+          xl:max-w-[1280px]
+        "
+      >
+        {/* HEADER */}
+        <header
+          className="
+            relative
+            bg-[#b8b8b8]
+            px-5
+            py-5
+            text-center
 
-                <AuthInput
-                  label="Email"
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                />
-      
-                <AuthSelect
-                  label="Learning Goal"
-                  name="learningGoal"
-                  value={form.learningGoal}
-                  onChange={handleChange}
-                  options={LEARNING_GOALS}
-                />
-                  
-                <AuthInput
-                  label="Password"
-                  type="password"
-                  name="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  showToggle={true}
-                />
+            lg:py-6
+          "
+        >
+          <h1
+            className="
+              font-extrabold
+              leading-none
+              text-black
 
-                <AuthInput
-                  label="Confirm password"
-                  type="password"
-                  name="confirmPassword"
-                  value={form.confirmPassword}
-                  onChange={handleChange}
-                  showToggle={true}
-                />
+              text-[34px]
+              sm:text-[40px]
+              lg:text-[48px]
+              xl:text-[52px]
+            "
+          >
+            LINGUAI
+          </h1>
 
-              </div>
-            </div>
+          <p
+            className="
+              font-extrabold
+              leading-none
+              text-red-600
 
-            <div className="flex flex-col justify-start">
-              <button
-                type="button"
-                onClick={() => setShowPasswordHelp((prev) => !prev)}
-                className="mb-4 text-center text-[18px] font-bold text-red-600 hover:underline"
+              text-[24px]
+              sm:text-[27px]
+              lg:text-[32px]
+            "
+          >
+            UV
+          </p>
+
+          {/* TRIÁNGULO */}
+          <div
+            className="
+              absolute
+              -bottom-[14px]
+              left-1/2
+              h-0
+              w-0
+              -translate-x-1/2
+              border-l-[15px]
+              border-r-[15px]
+              border-t-[15px]
+              border-l-transparent
+              border-r-transparent
+              border-t-[#b8b8b8]
+            "
+          />
+        </header>
+
+        {/*TITLE*/}
+        <div
+          className="
+            px-5
+            pb-3
+            pt-7
+            text-center
+
+            sm:px-8
+
+            lg:pb-4
+            lg:pt-8
+          "
+        >
+          <h2
+            className="
+              font-extrabold
+              leading-none
+              text-black
+
+              sm:text-[38px]
+              lg:text-[42px]
+              xl:text-[46px]
+            "
+          >
+            Sign Up
+          </h2>
+
+          <p
+            className="
+              mt-2
+              font-semibold
+              text-black
+
+              text-[16px]
+              sm:text-[21px]
+              lg:text-[23px]
+            "
+          >
+            Create an account to get
+            started!
+          </p>
+
+          <p
+            className="
+              mt-2
+              font-bold
+              text-red-600
+
+              text-[13px]
+              sm:text-[15px]
+              lg:text-[18px]
+            "
+          >
+            All fields below are required
+          </p>
+        </div>
+
+        {/*CONTENT */}
+        <div
+          className="
+            grid
+            grid-cols-1
+            gap-6
+            px-5
+            pb-7
+            pt-3
+
+            sm:px-8
+
+            lg:grid-cols-[1.45fr_0.75fr]
+            lg:gap-8
+            lg:px-10
+            lg:pb-9
+
+            xl:px-12
+          "
+        >
+          {/*LEFT - FORM*/}
+          <form
+            onSubmit={handleSubmit}
+            className="
+              grid
+              grid-cols-1
+              gap-x-6
+              gap-y-1
+
+              md:grid-cols-2
+            "
+          >
+            {/* FULL NAME */}
+            <AuthInput
+              label="Full name"
+              type="text"
+              name="fullName"
+              value={form.fullName}
+              onChange={handleChange}
+            />
+
+            {/* STUDENT ID */}
+            <AuthInput
+              label="Student ID"
+              type="text"
+              name="studentId"
+              value={form.studentId}
+              onChange={handleChange}
+            />
+
+            {/* EMAIL */}
+            <AuthInput
+              label="Email"
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+            />
+
+            {/* LEARNING GOAL */}
+            <AuthSelect
+              label="Learning Goal"
+              name="learningGoal"
+              value={form.learningGoal}
+              onChange={handleChange}
+              options={[
+                {
+                  value: "",
+                  label: "Select a goal",
+                },
+                {
+                  value: "speaking",
+                  label:
+                    "Improve speaking",
+                },
+                {
+                  value: "writing",
+                  label:
+                    "Improve writing",
+                },
+                {
+                  value: "grammar",
+                  label:
+                    "Improve grammar",
+                },
+                {
+                  value: "vocabulary",
+                  label:
+                    "Improve vocabulary",
+                },
+                {
+                  value: "general",
+                  label:
+                    "General English",
+                },
+              ]}
+            />
+
+            {/* PASSWORD */}
+            <AuthInput
+              label="Password"
+              type="password"
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              showToggle={true}
+            />
+
+            {/* CONFIRM PASSWORD */}
+            <AuthInput
+              label="Confirm password"
+              type="password"
+              name="confirmPassword"
+              value={
+                form.confirmPassword
+              }
+              onChange={handleChange}
+              showToggle={true}
+            />
+
+            {/* ERROR */}
+            {errorMessage && (
+              <p
+                className="
+                  text-center
+                  font-semibold
+                  text-red-600
+
+                  text-[13px]
+                  sm:text-[14px]
+
+                  md:col-span-2
+                "
               >
-                {showPasswordHelp
-                  ? "Hide password requirements"
-                  : "Show password requirements"}
-              </button>
+                {errorMessage}
+              </p>
+            )}
 
-              <PasswordRequirements
-                password={form.password}
-                isOpen={showPasswordHelp}
-              />
+            {/* MOBILE / TABLET REQUIREMENTS */}
+            <div
+              className="
+                mt-2
 
-              <div className="mt-4 mb-4">
-                <AuthButton>{loading ? "Creating account..." : "Register"}</AuthButton>
-              </div>
+                md:col-span-2
 
-              <div className="text-center text-[18px] text-black mt-2 -mb-5">
-                Already have an account?{" "}
-                <Link href="/login" className="text-red-600 font-bold hover:underline">
-                  Sign In here
-                </Link>
+                lg:hidden
+              "
+            >
+              <div
+                className="
+                  overflow-hidden
+                  
+                  bg-[#fafafa]
+                  shadow-sm
+                "
+              >
+                <div
+                  className="
+                    bg-[#b8b8b8]
+                    px-3
+                    py-2
+                  "
+                >
+                  <h3
+                    className="
+                      text-center
+                      font-extrabold
+                      text-black
+
+                      text-[16px]
+                      sm:text-[18px]
+                    "
+                  >
+                    Password Requirements
+                  </h3>
+                </div>
+
+                <div className="p-3">
+                  <PasswordRequirements
+                    password={
+                      form.password
+                    }
+                  />
+                </div>
               </div>
             </div>
+
+            {/* REGISTER */}
+            <div
+              className="
+                mt-4
+                md:col-span-2
+              "
+            >
+              <AuthButton
+                disabled={loading}
+                className="
+                  mx-auto
+                  block
+                  w-[85%]
+
+                  sm:w-[75%]
+                  lg:w-[70%]
+                "
+              >
+                {loading
+                  ? "Creating account..."
+                  : "Register"}
+              </AuthButton>
+            </div>
+
+            {/* LOGIN LINK */}
+            <div
+              className="
+                mt-3
+                text-center
+                text-black
+                font-bold
+
+                text-[14px]
+                sm:text-[17px]
+                lg:text-[20px]
+
+                md:col-span-2
+              "
+            >
+              Already have an account?{" "}
+              <Link
+                href="/login"
+                className="
+                  font-bold
+                  text-red-600
+                  hover:underline
+                "
+              >
+                Sign In here
+              </Link>
             </div>
           </form>
 
-          {errorMessage && (
-                <p className="ml-50 mt-5 -mb-5 text-left text-[18px] font-semibold text-red-600">
-                  {errorMessage}
-                </p>
-              )}
+          {/* =================================================
+              RIGHT - PASSWORD REQUIREMENTS
+              DESKTOP
+          ================================================== */}
+          <aside
+            className="
+              hidden
+              self-start
+              overflow-hidden
+              rounded-lg
 
-        </AuthCard>
-      </main>
-
-      {showSuccessModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-10">
-          <div className="w-full max-w-[380px] rounded-md bg-white p-6 shadow-lg">
-            <h3 className="mb-3 text-center text-[25px] font-bold text-black">
-              Account created successfully
-            </h3>
-            <p className="mb-5 text-center text-[20px] text-black">
-              You will be redirected to the login page.
-            </p>
-            <button
-              onClick={handleAcceptRedirect}
-              className="w-full rounded-[4px] bg-red-600 py-2 text-[25px] font-bold text-white transition hover:bg-red-700"
+              lg:block
+            "
+          >
+            {/* HEADER */}
+            <div
+              className="
+                px-4
+                py-3
+              "
             >
-              Accept
-            </button>
-          </div>
+              <h3
+                className="
+                  text-center
+                  font-extrabold
+                  text-red-600
+
+                  lg:text-[20px]
+                  xl:text-[21px]
+                "
+              >
+                Password Requirements
+              </h3>
+            </div>
+
+            {/* REQUIREMENTS */}
+            <div className="p-4">
+              <p
+                className="
+                  mb-4
+                  text-center
+                  font-semibold
+                  leading-relaxed
+                  text-black
+
+                  lg:text-[15px]
+                  xl:text-[18px]
+                "
+              >
+                Your password must meet
+                all of the following
+                requirements.
+              </p>
+
+              <PasswordRequirements
+                password={form.password}
+              />
+            </div>
+          </aside>
         </div>
-      )}
-    </>
+      </section>
+    </main>
   );
 }

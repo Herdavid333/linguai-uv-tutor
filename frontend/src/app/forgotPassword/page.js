@@ -29,8 +29,10 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setErrorMessage("Please enter a valid email address.");
+    if (!isValidEmail(email)) {
+      setErrorMessage(
+        "Please enter a valid email address."
+      );
       return;
     }
 
@@ -53,49 +55,113 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#e6e6e6] flex items-center justify-center px-4 py-8">
-      <AuthCard showArrow={true}>
+    <main
+      className="
+        flex
+        min-h-screen
+        items-center
+        justify-center
+        bg-[#e6e6e6]
+        px-4
+        py-6
+      "
+    >
+      <AuthCard
+        showArrow={true}
+        showBorder={false}
+      >
         <div className="text-center">
-          <h2 className="text-[50px] font-bold text-black leading-none">
+          <h2
+            className="
+              font-extrabold
+              leading-none
+              text-black
+
+              text-[32px]
+              sm:text-[38px]
+              lg:text-[44px]
+            "
+          >
             Recover Password
           </h2>
-          <p className="text-[20px] text-black font-semibold mt-5 mb-8 leading-4">
-            Enter your institutional email to reset your password.
+
+          <p
+            className="
+              mt-5
+              mb-8
+              font-semibold
+              leading-snug
+              text-black
+
+              text-[15px]
+              sm:text-[17px]
+              lg:text-[19px]
+            "
+          >
+            Enter your institutional email to
+            reset your password.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="w-full">
+        <form
+          onSubmit={handleSubmit}
+          className="w-full"
+        >
           <AuthInput
             label="Institutional email"
             type="email"
             name="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) =>
+              setEmail(e.target.value)
+            }
           />
 
           {errorMessage && (
-            <p className="mt-4 mb-3 text-center text-[12px] font-semibold text-red-600">
+            <p className="mt-4 mb-3 text-center text-[13px] font-semibold text-red-600 lg:text-[15px]">
               {errorMessage}
             </p>
           )}
 
           {message && (
-            <p className="mt-4 mb-8 text-center text-[20px] font-semibold text-green-700">
+            <p className="mt-4 mb-6 text-center text-[14px] font-semibold leading-relaxed text-green-700 lg:text-[16px]">
               {message}
             </p>
           )}
 
-          <div className="mt-5 mb-3">
-            <AuthButton>
-              {loading ? "Sending..." : "Send recovery email"}
+          <div className="mt-6 mb-3">
+            <AuthButton
+              disabled={loading}
+              className="
+                mx-auto
+                block
+                w-[85%]
+
+                sm:w-[80%]
+                lg:w-[75%]
+              "
+            >
+              {loading
+                ? "Sending..."
+                : "Send recovery email"}
             </AuthButton>
           </div>
 
-          <div className="text-center text-[20px] text-black mt-10">
+          <div
+            className="
+              mt-8
+              text-center
+              text-black
+
+              text-[14px]
+              sm:text-[16px]
+              lg:text-[18px]
+            "
+          >
             Remember your password?{" "}
             <Link
               href="/login"
-              className="text-red-600 font-bold hover:underline"
+              className="font-bold text-red-600 hover:underline"
             >
               Sign In here
             </Link>

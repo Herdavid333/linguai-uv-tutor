@@ -10,9 +10,13 @@ export default function FrequentErrorCard({
         border-b
         border-gray-400
         py-3
-        text-[13px]
         text-black
         last:border-b-0
+
+        text-[14px]
+        md:text-[15px]
+        lg:text-[17px]
+        xl:text-[18px]
       "
     >
       <div
@@ -45,11 +49,14 @@ export default function FrequentErrorCard({
               shrink-0
               rounded-full
               bg-red-100
-              px-2
-              py-1
-              text-[11px]
+              px-2 py-1
               font-extrabold
               text-red-600
+
+              text-[14px]
+              md:text-[15px]
+              lg:text-[17px]
+              xl:text-[18px]
             "
           >
             ×{repeated}
@@ -58,8 +65,15 @@ export default function FrequentErrorCard({
       </div>
 
       {explanation && (
-        <p className="mt-2 leading-snug text-gray-700">
-          <span className="font-extrabold text-black">
+        <p className="
+          mt-2 
+          leading-snug 
+          text-black
+        ">
+          <span className="
+            font-extrabold 
+            text-black
+          ">
             Explanation:
           </span>{" "}
           {explanation}

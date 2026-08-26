@@ -21,8 +21,23 @@ export default function PracticeDifficultySettingsPanel() {
   ];
 
   return (
-    <div className="bg-[#9d9d9d] px-4 py-4 shadow-md border border-gray-500 min-h-[170px]">
-      <p className="mb-3 text-[14px] font-semibold text-white">
+    <div className="
+      bg-[#e5e5e5]
+      px-4 py-4 
+      shadow-md 
+      min-h-[170px]
+
+      lg:min-h-[210px]
+      lg:px-6
+      lg:py-5
+    ">
+      <p className="
+        mb-3 
+        text-[19px] 
+        text-center
+        font-semibold 
+        text-red-600
+      ">
         Select the difficulty level for your practice sessions.
       </p>
 
@@ -43,11 +58,11 @@ export default function PracticeDifficultySettingsPanel() {
             />
 
             <div>
-              <p className="text-[15px] font-bold text-black">
+              <p className="text-[20px] font-extrabold text-black">
                 {option.name}
               </p>
 
-              <p className="text-[12px] text-black">
+              <p className="text-[19px] text-black">
                 {option.description}
               </p>
             </div>

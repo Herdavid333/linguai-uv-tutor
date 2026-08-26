@@ -8,7 +8,19 @@ export default function LanguageSettingsPanel() {
   const [helpLanguage, setHelpLanguage] = useState("english");
 
   return (
-    <div className="bg-[#9d9d9d] px-4 py-4 shadow-md border border-gray-500 min-h-[170px] flex flex-col justify-evenly">
+    <div className="
+      bg-[#e5e5e5] 
+      px-4 py-4 
+      shadow-md 
+      min-h-[170px] 
+      flex 
+      flex-col 
+      justify-evenly
+
+      lg:min-h-[210px]
+      lg:px-6
+      lg:py-5
+    ">
       <LanguageOptionRow
         label="Interface Language"
         value={interfaceLanguage}
@@ -26,8 +38,21 @@ export default function LanguageSettingsPanel() {
 
 function LanguageOptionRow({ label, value, onChange }) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      <span className="text-[15px] font-semibold text-black">
+    <div className="
+      flex 
+      items-center 
+      justify-between 
+      gap-3
+    ">
+      <span className="
+        font-semibold 
+        text-black
+
+        text-[14px]
+        md:text-[15px]
+        lg:text-[18px]
+        xl:text-[20px]
+      ">
         {label}
       </span>
 

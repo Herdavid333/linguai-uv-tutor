@@ -8,17 +8,42 @@ export default function VocabularyCard({
   return (
     <article
       className="
+        overflow-hidden
         rounded-md
-        bg-[#d9d9d9]
-        px-3
-        py-3
-        text-[14px]
-        text-black
+        bg-[#d8d8d8]
         shadow-sm
+
+        text-[13px]
+        md:text-[14px]
+        lg:text-[18px]
       "
     >
-      <div className="flex items-start justify-between gap-3">
-        <h3 className="min-w-0 break-words text-[16px] font-extrabold text-red-600">
+      {/* ENCABEZADO */}
+      <div
+        className="
+          flex
+          items-center
+          justify-between
+          gap-3
+          bg-red-600
+          px-3
+          py-2
+        "
+      >
+        <h3
+          className="
+            min-w-0
+            break-words
+            capitalize
+            font-extrabold
+            leading-tight
+            text-white
+
+            text-[13px]
+            md:text-[14px]
+            lg:text-[24px]
+          "
+        >
           {word}
         </h3>
 
@@ -27,12 +52,15 @@ export default function VocabularyCard({
             className="
               shrink-0
               rounded-full
-              bg-red-100
+              bg-white
               px-2
               py-1
-              text-[11px]
               font-extrabold
               text-red-600
+
+              text-[13px]
+              md:text-[14px]
+              lg:text-[20px]
             "
           >
             Seen {occurrences} times
@@ -40,27 +68,39 @@ export default function VocabularyCard({
         )}
       </div>
 
-      <p className="mt-2 leading-snug">
-        <span className="font-extrabold">
-          Meaning:
-        </span>{" "}
-        {meaning}
-      </p>
-
-      <p className="mt-2 leading-snug text-gray-700">
-        <span className="font-extrabold text-black">
-          Example:
-        </span>{" "}
-        <span className="italic">
-          {example}
-        </span>
-      </p>
-
-      {unit && (
-        <p className="mt-2 text-[12px] font-semibold text-gray-600">
-          Practiced in: {unit}
+      {/* CONTENIDO */}
+      <div className="px-3 py-3">
+        <p className="leading-snug text-black">
+          <span className="font-extrabold">
+            Meaning:
+          </span>{" "}
+          {meaning}
         </p>
-      )}
+
+        <p className="mt-2 leading-snug text-black">
+          <span className="font-extrabold text-black">
+            Example:
+          </span>{" "}
+          <span className="italic">
+            {example}
+          </span>
+        </p>
+
+        {unit && (
+           <p className="
+              mt-2
+              font-semibold 
+              text-red-600
+              text-right
+
+              text-[13px]
+              md:text-[14px]
+              lg:text-[17px]
+            ">
+              Practiced in: {unit}
+            </p>
+        )}
+      </div>
     </article>
   );
 }

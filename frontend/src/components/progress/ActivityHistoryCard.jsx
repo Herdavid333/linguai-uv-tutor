@@ -178,26 +178,68 @@ export default function ActivityHistoryCard({
       : null;
 
   return (
-    <article className="rounded-md bg-[#d9d9d9] px-3 py-3 shadow-sm">
-      <p className="text-[12px] font-extrabold text-red-600">
+    <article className="
+      rounded-md 
+      bg-[#d9d9d9] 
+      px-3 py-3 
+      shadow-sm
+    ">
+      <p className="
+        font-extrabold 
+        text-red-600
+        text-right
+
+        text-[13px]
+        md:text-[14px]
+        lg:text-[17px]
+      ">
         {activityDate}
       </p>
 
-      <h3 className="mt-2 text-[14px] font-extrabold leading-tight text-black">
+      <h3 className="
+        mt-2
+        font-extrabold 
+        leading-tight 
+        text-black
+
+        text-[13px]
+        md:text-[14px]
+        lg:text-[20px]
+      ">
         {activity?.unitTitle ||
           "Unit unavailable"}
       </h3>
 
-      <p className="mt-1 text-[12px] font-bold leading-tight text-black">
-        <span className="font-extrabold text-red-600">
+      <p className="
+        mt-1 
+        font-bold 
+        leading-tight 
+        text-black
+
+        text-[13px]
+        md:text-[14px]
+        lg:text-[18px]
+      ">
+        <span className="
+        font-extrabold text-red-600">
           Topic:
         </span>{" "}
         {activity?.topicTitle ||
           "Not available"}
       </p>
 
-      <p className="mt-1 text-[12px] font-bold leading-tight text-black">
-        <span className="font-extrabold text-red-600">
+      <p className="
+        mt-1 
+        font-bold 
+        leading-tight 
+        text-black
+
+        text-[13px]
+        md:text-[14px]
+        lg:text-[18px]
+      ">
+        <span className="
+        font-extrabold text-red-600">
           Activity:
         </span>{" "}
         {activity?.activityName ||
@@ -205,21 +247,47 @@ export default function ActivityHistoryCard({
           "Not available"}
       </p>
 
-      <p className="mt-1 text-[12px] font-bold leading-tight text-black">
+      <p className="mt-1 
+          font-bold 
+          leading-tight 
+          text-black
+
+          text-[13px]
+          md:text-[14px]
+          lg:text-[18px]
+        ">
         <span className="font-extrabold text-red-600">
           Status:
         </span>{" "}
         {status}
       </p>
 
-      <p className="mt-1 text-[12px] font-bold leading-tight text-black">
+      <p className="
+          mt-1 
+          font-bold 
+          leading-tight 
+          text-black
+
+          text-[13px]
+          md:text-[14px]
+          lg:text-[18px]
+        ">
         <span className="font-extrabold text-red-600">
           {result.label}:
         </span>{" "}
         {result.value}
       </p>
 
-      <p className="mt-1 text-[12px] font-bold leading-tight text-black">
+      <p className="
+          mt-1 
+          font-bold 
+          leading-tight 
+          text-black
+
+          text-[13px]
+          md:text-[14px]
+          lg:text-[18px]
+        ">
         <span className="font-extrabold text-red-600">
           Meaningful interactions:
         </span>{" "}
@@ -228,12 +296,31 @@ export default function ActivityHistoryCard({
 
       {isEvaluated &&
         performance && (
-          <div className="mt-3 border-t border-gray-500 pt-2">
-            <p className="mb-1 text-[12px] font-extrabold text-black">
+          <div className="
+          mt-3 border-t border-gray-500 pt-2">
+            <p className="
+              mb-1 
+              font-extrabold 
+              text-black
+
+              text-[13px]
+              md:text-[14px]
+              lg:text-[18px]
+            ">
               Performance
             </p>
 
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] font-semibold text-black">
+            <div className="
+              grid 
+              grid-cols-2 
+              gap-x-3 gap-y-1 
+              font-semibold 
+              text-black
+              
+              text-[13px]
+              md:text-[14px]
+              lg:text-[18px]
+            ">
               <MetricValue
                 label="Accuracy"
                 value={

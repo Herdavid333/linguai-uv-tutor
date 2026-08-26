@@ -1,66 +1,95 @@
-"use client";
-
-export const getPasswordRequirements = (password = "") => [
-  {
-    label: "Minimum 8 characters",
-    valid: password.length >= 8,
-  },
-  {
-    label: "At least one uppercase letter (A-Z)",
-    valid: /[A-Z]/.test(password),
-  },
-  {
-    label: "At least one lowercase letter (a-z)",
-    valid: /[a-z]/.test(password),
-  },
-  {
-    label: "At least one number (0-9)",
-    valid: /[0-9]/.test(password),
-  },
-  {
-    label: "At least one special character (!@#$%^&*)",
-    valid: /[!@#$%^&*(),.?":{}|<>_\-\\[\];'/`~+=]/.test(password),
-  },
-];
+import {
+  CheckCircle2,
+  Circle,
+} from "lucide-react";
 
 export default function PasswordRequirements({
-  password,
-  isOpen = true,
-  compact = false,
+  password = "",
 }) {
-  const requirements = getPasswordRequirements(password);
-
-  if (!isOpen) return null;
+  const requirements = [
+    {
+      id: "length",
+      label: "At least 8 characters",
+      valid: password.length >= 8,
+    },
+    {
+      id: "uppercase",
+      label: "At least one uppercase letter",
+      valid: /[A-Z]/.test(password),
+    },
+    {
+      id: "lowercase",
+      label: "At least one lowercase letter",
+      valid: /[a-z]/.test(password),
+    },
+    {
+      id: "number",
+      label: "At least one number",
+      valid: /\d/.test(password),
+    },
+  ];
 
   return (
-    <div
-      className={`mt-1 rounded-md bg-[#b3b3b3] p-4 ${
-        compact ? "text-[12px]" : "text-[18px]"
-      }`}
-    >
-      <h4
-        className={`mb-1 font-bold text-black text-center ${
-          compact ? "text-[13px]" : "text-[18px]"
-        }`}
-      >
-        Password Requirements
-      </h4>
+    <div className="space-y-3">
+      {requirements.map(
+        (requirement) => {
+          const Icon =
+            requirement.valid
+              ? CheckCircle2
+              : Circle;
 
-      <ul className="space-y-0">
-        {requirements.map((requirement, index) => (
-          <li
-            key={index}
-            className={`flex items-center gap-2 ${
-              requirement.valid ? "text-black" : "text-white"
-            }`}
-          >
-            <span className="inline-block w-[16px] text-center font-bold">
-              {requirement.valid ? "✓" : "•"}
-            </span>
-            <span>{requirement.label}</span>
-          </li>
-        ))}
-      </ul>
+          return (
+            <div
+              key={requirement.id}
+              className={`
+                flex
+                items-center
+                gap-3
+                rounded-md
+                border
+                px-3
+                py-2.5
+                transition-all
+                duration-200
+
+                ${
+                  requirement.valid
+                    ? "border-green-300 bg-green-50"
+                    : "border-gray-300 bg-white"
+                }
+              `}
+            >
+              <Icon
+                size={21}
+                strokeWidth={2.5}
+                className={
+                  requirement.valid
+                    ? "shrink-0 text-green-600"
+                    : "shrink-0 text-gray-400"
+                }
+              />
+
+              <span
+                className={`
+                  font-semibold
+
+                  text-[13px]
+                  sm:text-[14px]
+                  lg:text-[16px]
+
+                  ${
+                    requirement.valid
+                      ? "text-green-700"
+                      : "text-gray-600"
+                  }
+                `}
+              >
+                {requirement.label}
+              </span>
+            </div>
+          );
+        }
+      )}
     </div>
   );
 }
